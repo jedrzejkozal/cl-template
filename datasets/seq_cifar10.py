@@ -7,7 +7,7 @@ from typing import Tuple
 
 import torch.nn.functional as F
 import torchvision.transforms as transforms
-from backbone.ResNet18 import resnet18
+from backbones.ResNet18 import resnet18
 from PIL import Image
 from torchvision.datasets import CIFAR10
 

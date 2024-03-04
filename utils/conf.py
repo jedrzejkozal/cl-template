@@ -24,6 +24,13 @@ def base_path_dataset() -> str:
     return '/usr/share/mammoth_datasets/'
 
 
+def imagenet_path() -> str:
+    """
+    Return the path to downloaded ImageNet dataset in the system
+    """
+    return '/home/common/datasets/imagenet/'
+
+
 def set_random_seed(seed: int) -> None:
     """
     Sets the seeds at a certain value.

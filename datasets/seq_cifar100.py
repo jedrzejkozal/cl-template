@@ -8,7 +8,7 @@ from typing import Tuple
 import torch.nn.functional as F
 import torch.optim
 import torchvision.transforms as transforms
-from backbone.ResNet18 import resnet18
+from backbones.ResNet18 import resnet18
 from PIL import Image
 from torchvision.datasets import CIFAR100
 
@@ -112,9 +112,7 @@ class SequentialCIFAR100(ContinualDataset):
         return transform
 
     def get_backbone(self):
-        return resnet18(SequentialCIFAR100.N_CLASSES_PER_TASK * SequentialCIFAR100.N_TASKS, nf=int(64*self.args.resnet_width))
-        # model = mobilenet_v2(num_classes=SequentialCIFAR100.N_CLASSES_PER_TASK * SequentialCIFAR100.N_TASKS)
-        # return model
+        return resnet18(SequentialCIFAR100.N_CLASSES_PER_TASK * SequentialCIFAR100.N_TASKS, nf=int(64*self.args.model_width))
 
     @staticmethod
     def get_loss():

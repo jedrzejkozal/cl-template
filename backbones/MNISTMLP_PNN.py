@@ -9,8 +9,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from backbone import MammothBackbone, num_flat_features, xavier
-from backbone.utils.modules import AlphaModule, ListModule
+from backbones import MammothBackbone, num_flat_features, xavier
+from backbones.utils.modules import AlphaModule, ListModule
 
 
 class MNISTMLP_PNN(MammothBackbone):

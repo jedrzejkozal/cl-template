@@ -5,7 +5,7 @@
 
 import torch.nn.functional as F
 import torchvision.transforms as transforms
-from backbone.MNISTMLP import MNISTMLP
+from backbones.MNISTMLP import MNISTMLP
 
 from datasets.perm_mnist import store_mnist_loaders
 from datasets.transforms.rotation import Rotation

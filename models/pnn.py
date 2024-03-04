@@ -21,10 +21,10 @@ def get_parser() -> ArgumentParser:
 
 
 def get_backbone(bone, old_cols=None, x_shape=None):
-    from backbone.MNISTMLP import MNISTMLP
-    from backbone.MNISTMLP_PNN import MNISTMLP_PNN
-    from backbone.ResNet18 import ResNet
-    from backbone.ResNet18_PNN import resnet18_pnn
+    from backbones.MNISTMLP import MNISTMLP
+    from backbones.MNISTMLP_PNN import MNISTMLP_PNN
+    from backbones.ResNet18 import ResNet
+    from backbones.ResNet18_PNN import resnet18_pnn
 
     if isinstance(bone, MNISTMLP):
         return MNISTMLP_PNN(bone.input_size, bone.output_size, old_cols)

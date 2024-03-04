@@ -10,10 +10,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.functional import avg_pool2d, relu
 
-from backbone import MammothBackbone
+from backbones import MammothBackbone
 
 
-def conv3x3(in_planes: int, out_planes: int, stride: int=1) -> F.conv2d:
+def conv3x3(in_planes: int, out_planes: int, stride: int = 1) -> F.conv2d:
     """
     Instantiates a 3x3 convolutional layer with no bias.
     :param in_planes: number of input channels
@@ -31,7 +31,7 @@ class BasicBlock(nn.Module):
     """
     expansion = 1
 
-    def __init__(self, in_planes: int, planes: int, stride: int=1) -> None:
+    def __init__(self, in_planes: int, planes: int, stride: int = 1) -> None:
         """
         Instantiates the basic block of the network.
         :param in_planes: the number of input channels
@@ -126,14 +126,14 @@ class ResNet(MammothBackbone):
         :return: output tensor (output_classes)
         """
 
-        out = relu(self.bn1(self.conv1(x))) # 64, 32, 32
+        out = relu(self.bn1(self.conv1(x)))  # 64, 32, 32
         if hasattr(self, 'maxpool'):
             out = self.maxpool(out)
         out = self.layer1(out)  # -> 64, 32, 32
         out = self.layer2(out)  # -> 128, 16, 16
         out = self.layer3(out)  # -> 256, 8, 8
         out = self.layer4(out)  # -> 512, 4, 4
-        out = avg_pool2d(out, out.shape[2]) # -> 512, 1, 1
+        out = avg_pool2d(out, out.shape[2])  # -> 512, 1, 1
         feature = out.view(out.size(0), -1)  # 512
 
         if returnt == 'features':
@@ -149,11 +149,20 @@ class ResNet(MammothBackbone):
         raise NotImplementedError("Unknown return type")
 
 
-def resnet18(nclasses: int, nf: int=64) -> ResNet:
+def resnet18(n_classes: int, width: int = 1, pretrained: bool = False) -> ResNet:
     """
     Instantiates a ResNet18 network.
-    :param nclasses: number of output classes
+    :param n_classes: number of output classes
     :param nf: number of filters
     :return: ResNet network
     """
-    return ResNet(BasicBlock, [2, 2, 2, 2], nclasses, nf)
+    nf = int(64*width)
+    return ResNet(BasicBlock, [2, 2, 2, 2], n_classes, nf)
+
+
+def resnet50(n_classes: int, width: int = 1, pretrained: bool = False) -> ResNet:
+    raise NotImplementedError
+
+
+def get_all_backbones():
+    return ['resnet18', 'resnet50']

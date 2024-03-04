@@ -6,6 +6,7 @@
 from argparse import ArgumentParser
 from datasets import NAMES as DATASET_NAMES
 from models import get_all_models
+from backbones import get_all_backbones
 
 
 def add_experiment_args(parser: ArgumentParser) -> None:
@@ -19,7 +20,10 @@ def add_experiment_args(parser: ArgumentParser) -> None:
     parser.add_argument('--half_data_in_first_task', action='store_true', help='use half of data for first expirience')
     parser.add_argument('--model', type=str, required=True,
                         help='Model name.', choices=get_all_models())
-    parser.add_argument('--resnet_width', type=float, default=1.0)
+
+    parser.add_argument('--backbone', default=None, type=str, help='backbone to use during training', choices=get_all_backbones())
+    parser.add_argument('--model_width', type=float, default=1.0)
+    parser.add_argument('--pretrained', action='store_true', help='use pretrained model')
 
     parser.add_argument('--lr', type=float, required=True,
                         help='Learning rate.')

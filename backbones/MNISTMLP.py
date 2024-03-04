@@ -6,7 +6,8 @@
 import torch
 import torch.nn as nn
 
-from backbone import MammothBackbone, num_flat_features, xavier
+from backbones.mammoth_backbone import MammothBackbone
+from backbones.utils import num_flat_features, xavier
 
 
 class MNISTMLP(MammothBackbone):
@@ -66,3 +67,11 @@ class MNISTMLP(MammothBackbone):
             return (out, feats)
 
         raise NotImplementedError("Unknown return type")
+
+
+def get_all_backbones():
+    return ['mnistmlp']
+
+
+def mnistmlp(n_classes: int, width: int = 1, pretrained: bool = False):
+    return MNISTMLP(100, n_classes)

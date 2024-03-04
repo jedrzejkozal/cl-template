@@ -17,6 +17,7 @@ import torch
 
 from datasets import NAMES as DATASET_NAMES
 from datasets import ContinualDataset, get_dataset
+from backbones import get_backbone
 from models import get_all_models, get_model
 from utils.args import add_management_args
 from utils.best_args import best_args
@@ -118,7 +119,10 @@ def run_experiment(args):
     if hasattr(importlib.import_module('models.' + args.model), 'Buffer') and args.minibatch_size is None:
         args.minibatch_size = dataset.get_minibatch_size()
 
-    backbone = dataset.get_backbone()
+    if args.backbone is None:
+        backbone = dataset.get_backbone()
+    else:
+        backbone = get_backbone(args.backbone, dataset.N_CLASSES, args)
     print(f'backbone number of parameters = {get_n_parameters(backbone)}')
 
     loss = dataset.get_loss()

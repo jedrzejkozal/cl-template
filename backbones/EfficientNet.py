@@ -12,7 +12,7 @@ from torch import nn
 from torch.nn import functional as F
 from torch.utils import model_zoo
 
-from backbone import MammothBackbone
+from backbones import MammothBackbone
 
 url_map = {
     'efficientnet-b0': 'https://github.com/lukemelas/EfficientNet-PyTorch/releases/download/1.0/efficientnet-b0-355c32eb.pth',
@@ -1000,15 +1000,37 @@ class EfficientNet(MammothBackbone):
     #     return torch.cat(grads)
 
 
-def mammoth_efficientnet(nclasses: int, model_name: str, pretrained=False):
+def mammoth_efficientnet(n_classes: int, model_name: str, pretrained=False, width: int = 1):
     """
     Instantiates a ResNet18 network.
-    :param nclasses: number of output classes
+    :param n_classes: number of output classes
     :param nf: number of filters
     :return: ResNet network
     """
     print(model_name)
     if not pretrained:
-        return EfficientNet.from_name(model_name=model_name, num_classes=nclasses)
+        return EfficientNet.from_name(model_name=model_name, num_classes=n_classes, width_coefficient=width)
     else:
-        return EfficientNet.from_pretrained(model_name=model_name, num_classes=nclasses)
+        return EfficientNet.from_pretrained(model_name=model_name, num_classes=n_classes, width_coefficient=width)
+
+
+def get_all_backbones():
+    return ['efficientnet_b0', 'efficientnet_b1', 'efficientnet_b2', 'efficientnet_b3',]
+    # 'efficientnet_b4', 'efficientnet_b5', 'efficientnet_b6', 'efficientnet_b7',
+    # 'efficientnet_b8']
+
+
+def efficientnet_b0(n_classes: int, width: int = 1, pretrained: bool = False):
+    return mammoth_efficientnet(n_classes, 'efficientnet_b0', pretrained=pretrained, width=width)
+
+
+def efficientnet_b1(n_classes: int, width: int = 1, pretrained: bool = False):
+    return mammoth_efficientnet(n_classes, 'efficientnet_b1', pretrained=pretrained, width=width)
+
+
+def efficientnet_b2(n_classes: int, width: int = 1, pretrained: bool = False):
+    return mammoth_efficientnet(n_classes, 'efficientnet_b2', pretrained=pretrained, width=width)
+
+
+def efficientnet_b3(n_classes: int, width: int = 1, pretrained: bool = False):
+    return mammoth_efficientnet(n_classes, 'efficientnet_b3', pretrained=pretrained, width=width)

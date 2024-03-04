@@ -11,7 +11,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import torchvision.transforms as transforms
-from backbone.MNISTMLP import MNISTMLP
+from backbones.MNISTMLP import MNISTMLP
 from torch.utils.data import DataLoader
 from torchvision.datasets import MNIST
 
@@ -159,7 +159,7 @@ class MNIST360(GCLDataset):
             x_train.append(i_x_train)
             y_train.append(i_y_train)
             x_train_naug.append(i_x_train_naug)
-        x_train, y_train, x_train_naug = torch.cat(x_train),\
+        x_train, y_train, x_train_naug = torch.cat(x_train), \
             torch.cat(y_train), torch.cat(x_train_naug)
 
         self.active_remaining_training_items[0] -= batch_size_0

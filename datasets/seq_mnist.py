@@ -7,7 +7,7 @@ from typing import Tuple
 
 import torch.nn.functional as F
 import torchvision.transforms as transforms
-from backbone.MNISTMLP import MNISTMLP
+from backbones.MNISTMLP import MNISTMLP
 from PIL import Image
 from torchvision.datasets import MNIST
 
