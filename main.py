@@ -120,7 +120,6 @@ def run_experiment(args):
 
     backbone = dataset.get_backbone()
     print(f'backbone number of parameters = {get_n_parameters(backbone)}')
-    # print(backbone)
 
     loss = dataset.get_loss()
     model = get_model(args, backbone, loss, dataset.get_transform())

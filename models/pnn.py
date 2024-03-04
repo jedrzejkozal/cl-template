@@ -10,7 +10,6 @@ from datasets import get_dataset
 from torch.optim import SGD
 
 from utils.args import add_management_args, add_experiment_args, ArgumentParser
-from utils.conf import get_device
 
 
 def get_parser() -> ArgumentParser:
@@ -44,7 +43,6 @@ class Pnn(nn.Module):
         self.loss = loss
         self.args = args
         self.transform = transform
-        self.device = get_device()
         self.x_shape = None
         self.nets = [get_backbone(backbone).to(self.device)]
         self.net = self.nets[-1]

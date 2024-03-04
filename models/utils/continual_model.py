@@ -12,7 +12,6 @@ import torch
 import torch.nn as nn
 from torch.optim import SGD
 
-from utils.conf import get_device
 from utils.magic import persistent_locals
 
 
