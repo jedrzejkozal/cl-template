@@ -103,10 +103,8 @@ class SequentialImageNet(ContinualDataset):
             [transforms.ToPILImage(), SequentialImageNet.TEST_TRANSFORM, SequentialImageNet.AUG_TRANSFORM])
         return transform
 
-    @staticmethod
-    def get_backbone():
-        return resnet18(SequentialImageNet.N_CLASSES_PER_TASK
-                        * SequentialImageNet.N_TASKS)
+    def get_backbone(self):
+        return resnet18(SequentialImageNet.N_CLASSES_PER_TASK * SequentialImageNet.N_TASKS, width=self.args.model_width)
 
     @staticmethod
     def get_loss():

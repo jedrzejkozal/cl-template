@@ -148,12 +148,8 @@ class SequentialTinyImagenet(ContinualDataset):
         train, test = store_masked_loaders(train_dataset, test_dataset, self)
         return train, test
 
-    @staticmethod
-    def get_backbone():
-        return resnet18(SequentialTinyImagenet.N_CLASSES_PER_TASK
-                        * SequentialTinyImagenet.N_TASKS)
-        # model = mobilenet_v2(num_classes=SequentialTinyImagenet.N_CLASSES_PER_TASK * SequentialTinyImagenet.N_TASKS)
-        # return model
+    def get_backbone(self):
+        return resnet18(SequentialTinyImagenet.N_CLASSES_PER_TASK * SequentialTinyImagenet.N_TASKS, width=self.args.model_width)
 
     @staticmethod
     def get_loss():

@@ -103,10 +103,8 @@ class SequentialCIFAR10(ContinualDataset):
             [transforms.ToPILImage(), SequentialCIFAR10.TRANSFORM])
         return transform
 
-    @staticmethod
-    def get_backbone():
-        return resnet18(SequentialCIFAR10.N_CLASSES_PER_TASK
-                        * SequentialCIFAR10.N_TASKS)
+    def get_backbone(self):
+        return resnet18(SequentialCIFAR10.N_CLASSES_PER_TASK * SequentialCIFAR10.N_TASKS, width=self.args.model_width)
 
     @staticmethod
     def get_loss():

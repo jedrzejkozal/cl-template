@@ -47,8 +47,7 @@ class ContinualDataset:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def get_backbone() -> nn.Module:
+    def get_backbone(self) -> nn.Module:
         """
         Returns the backbone to be used for to the current dataset.
         """
