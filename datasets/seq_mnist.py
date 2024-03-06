@@ -11,8 +11,7 @@ from backbones.MNISTMLP import MNISTMLP
 from PIL import Image
 from torchvision.datasets import MNIST
 
-from datasets.utils.continual_benchmark import (ContinualBenchmark,
-                                                store_masked_loaders)
+from datasets.utils.continual_benchmark import ContinualBenchmark
 from datasets.utils.validation import get_train_val
 from utils.conf import base_path_dataset as base_path
 
@@ -72,7 +71,7 @@ class SequentialMNIST(ContinualBenchmark):
             test_dataset = MNIST(base_path() + 'MNIST',
                                  train=False, download=True, transform=self.transform)
 
-        train, test = store_masked_loaders(train_dataset, test_dataset, self)
+        train, test = self.store_masked_loaders(train_dataset, test_dataset)
         return train, test
 
     @staticmethod

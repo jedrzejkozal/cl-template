@@ -15,8 +15,7 @@ from PIL import Image
 from torch.utils.data import Dataset
 
 from datasets.transforms.denormalization import DeNormalize
-from datasets.utils.continual_benchmark import (ContinualBenchmark,
-                                                store_masked_loaders)
+from datasets.utils.continual_benchmark import ContinualBenchmark
 from datasets.utils.validation import get_train_val
 from utils.conf import base_path_dataset as base_path
 from torchvision.models import mobilenet_v2
@@ -142,7 +141,7 @@ class SequentialTinyImagenet(ContinualBenchmark):
                                             train=False, download=True, transform=test_transform)
 
         self.permute_tasks(train_dataset, test_dataset)
-        train, test = store_masked_loaders(train_dataset, test_dataset, self)
+        train, test = self.store_masked_loaders(train_dataset, test_dataset)
         return train, test
 
     def get_backbone(self):

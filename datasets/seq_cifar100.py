@@ -13,8 +13,7 @@ from PIL import Image
 from torchvision.datasets import CIFAR100
 
 from datasets.transforms.denormalization import DeNormalize
-from datasets.utils.continual_benchmark import (ContinualBenchmark,
-                                                store_masked_loaders)
+from datasets.utils.continual_benchmark import ContinualBenchmark
 from datasets.utils.validation import get_train_val
 from utils.conf import base_path_dataset as base_path
 from torchvision.models import mobilenet_v2
@@ -63,7 +62,6 @@ class TrainCIFAR100(CIFAR100):
         if hasattr(self, 'logits'):
             return img, target, not_aug_img, self.logits[index]
 
-        # TODO check if images here have proper size
         return img, target, not_aug_img
 
 
@@ -94,7 +92,7 @@ class SequentialCIFAR100(ContinualBenchmark):
                                         download=True, transform=test_transform)
 
         self.permute_tasks(train_dataset, test_dataset)
-        train, test = store_masked_loaders(train_dataset, test_dataset, self)
+        train, test = self.store_masked_loaders(train_dataset, test_dataset)
 
         return train, test
 

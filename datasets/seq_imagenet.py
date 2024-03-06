@@ -14,8 +14,7 @@ from PIL import Image
 from torchvision.datasets import ImageFolder
 
 from datasets.transforms.denormalization import DeNormalize
-from datasets.utils.continual_benchmark import (ContinualBenchmark,
-                                                store_masked_loaders)
+from datasets.utils.continual_benchmark import ContinualBenchmark
 from datasets.utils.validation import get_train_val
 from utils.conf import imagenet_path
 
@@ -84,7 +83,7 @@ class SequentialImageNet(ContinualBenchmark):
                 imagenet_path(), split='val', transform=test_transform)
 
         self.permute_tasks(train_dataset, test_dataset)
-        train, test = store_masked_loaders(train_dataset, test_dataset, self)
+        train, test = self.store_masked_loaders(train_dataset, test_dataset)
 
         return train, test
 
@@ -142,3 +141,9 @@ class SequentialImageNet(ContinualBenchmark):
         scheduler = torch.optim.lr_scheduler.MultiStepLR(
             model.opt, [35, 45], gamma=0.1, verbose=False)
         return scheduler
+
+    def select_subsets(self, train_dataset, test_dataset, n_classes):
+        train_dataset.samples = list(filter(lambda s: s[1] >= self.i and s[1] < self.i + n_classes, train_dataset.samples))
+        test_dataset.samples = list(filter(lambda s: s[1] >= self.i and s[1] < self.i + n_classes, test_dataset.samples))
+
+        return train_dataset, test_dataset
