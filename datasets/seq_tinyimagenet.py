@@ -10,7 +10,7 @@ import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as transforms
-from backbones.ResNet18 import resnet18
+from backbones.resnet import resnet18
 from PIL import Image
 from torch.utils.data import Dataset
 

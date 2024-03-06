@@ -8,7 +8,7 @@ from typing import Tuple
 import torch.nn.functional as F
 import torch.optim
 import torchvision.transforms as transforms
-from backbones.ResNet18 import resnet18
+from backbones.resnet import resnet18
 from PIL import Image
 from torchvision.datasets import CIFAR100
 

@@ -8,6 +8,7 @@ from typing import List
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision.models.resnet
 from torch.nn.functional import avg_pool2d, relu
 
 from backbones import MammothBackbone
@@ -161,7 +162,15 @@ def resnet18(n_classes: int, width: int = 1, pretrained: bool = False) -> ResNet
 
 
 def resnet50(n_classes: int, width: int = 1, pretrained: bool = False) -> ResNet:
-    raise NotImplementedError
+    width_per_group = int(64 * width)
+    if pretrained:
+        weights = torchvision.models.resnet.ResNet50_Weights.DEFAULT
+        model = torchvision.models.resnet.resnet50(num_classes=1000, weights=weights, width_per_group=width_per_group)
+        model.classifier[1] = nn.Linear(model.last_channel, n_classes)
+    else:
+        model = torchvision.models.resnet.resnet50(num_classes=n_classes, weights=None, width_per_group=width_per_group)
+
+    return model
 
 
 def get_all_backbones():

@@ -9,7 +9,7 @@ import os
 import torch.nn.functional as F
 import torch.optim
 import torchvision.transforms as transforms
-from backbones.ResNet18 import resnet18
+from backbones.resnet import resnet50
 from PIL import Image
 from torchvision.datasets import ImageFolder
 
@@ -104,7 +104,7 @@ class SequentialImageNet(ContinualBenchmark):
         return transform
 
     def get_backbone(self):
-        return resnet18(SequentialImageNet.N_CLASSES_PER_TASK * SequentialImageNet.N_TASKS, width=self.args.model_width)
+        return resnet50(SequentialImageNet.N_CLASSES_PER_TASK * SequentialImageNet.N_TASKS, width=self.args.model_width)
 
     @staticmethod
     def get_loss():
