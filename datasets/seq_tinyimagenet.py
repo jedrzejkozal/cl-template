@@ -15,21 +15,20 @@ from PIL import Image
 from torch.utils.data import Dataset
 
 from datasets.transforms.denormalization import DeNormalize
-from datasets.utils.continual_dataset import (ContinualDataset,
-                                              store_masked_loaders)
+from datasets.utils.continual_benchmark import (ContinualBenchmark,
+                                                store_masked_loaders)
 from datasets.utils.validation import get_train_val
 from utils.conf import base_path_dataset as base_path
 from torchvision.models import mobilenet_v2
 
 
-class TinyImagenet(Dataset):
+class TestTinyImagenet(Dataset):
     """
     Defines Tiny Imagenet as for the others pytorch datasets.
     """
 
     def __init__(self, root: str, train: bool = True, transform: Optional[nn.Module] = None,
                  target_transform: Optional[nn.Module] = None, download: bool = False) -> None:
-        self.not_aug_transform = transforms.Compose([transforms.ToTensor()])
         self.root = root
         self.train = train
         self.transform = transform
@@ -83,14 +82,15 @@ class TinyImagenet(Dataset):
         return img, target
 
 
-class MyTinyImagenet(TinyImagenet):
+class TrainTinyImagenet(TestTinyImagenet):
     """
     Defines Tiny Imagenet as for the others pytorch datasets.
     """
 
-    def __init__(self, root: str, train: bool = True, transform: Optional[nn.Module] = None,
+    def __init__(self, root: str, train: bool = True, transform: Optional[nn.Module] = None, not_aug_transform: Optional[nn.Module] = None,
                  target_transform: Optional[nn.Module] = None, download: bool = False) -> None:
-        super(MyTinyImagenet, self).__init__(
+        self.not_aug_transform = not_aug_transform
+        super(TrainTinyImagenet, self).__init__(
             root, train, transform, target_transform, download)
 
     def __getitem__(self, index):
@@ -115,34 +115,31 @@ class MyTinyImagenet(TinyImagenet):
         return img, target, not_aug_img
 
 
-class SequentialTinyImagenet(ContinualDataset):
+class SequentialTinyImagenet(ContinualBenchmark):
 
     NAME = 'seq-tinyimg'
     SETTING = 'class-il'
     N_CLASSES = 200
     N_TASKS = 20
     N_CLASSES_PER_TASK = N_CLASSES // N_TASKS
-    TRANSFORM = transforms.Compose(
-        [transforms.RandomCrop(64, padding=4),
-         transforms.RandomHorizontalFlip(),
-         transforms.ToTensor(),
-         transforms.Normalize((0.4802, 0.4480, 0.3975),
-                              (0.2770, 0.2691, 0.2821))])
+    IMG_SIZE = 64
 
     def get_data_loaders(self):
-        transform = self.TRANSFORM
-
+        not_aug_transform = transforms.Compose([transforms.ToTensor()])
         test_transform = transforms.Compose(
             [transforms.ToTensor(), self.get_normalization_transform()])
+        if self.image_size != self.IMG_SIZE:
+            not_aug_transform.transforms.insert(0, transforms.Resize(self.image_size))
+            test_transform.transforms.insert(0, transforms.Resize(self.image_size))
 
-        train_dataset = MyTinyImagenet(base_path() + 'TINYIMG',
-                                       train=True, download=True, transform=transform)
+        train_dataset = TrainTinyImagenet(base_path() + 'TINYIMG',
+                                          train=True, download=True, transform=self.transform, not_aug_transform=not_aug_transform)
         if self.args.validation:
             train_dataset, test_dataset = get_train_val(train_dataset,
                                                         test_transform, self.NAME)
         else:
-            test_dataset = TinyImagenet(base_path() + 'TINYIMG',
-                                        train=False, download=True, transform=test_transform)
+            test_dataset = TestTinyImagenet(base_path() + 'TINYIMG',
+                                            train=False, download=True, transform=test_transform)
 
         self.permute_tasks(train_dataset, test_dataset)
         train, test = store_masked_loaders(train_dataset, test_dataset, self)
@@ -155,9 +152,20 @@ class SequentialTinyImagenet(ContinualDataset):
     def get_loss():
         return F.cross_entropy
 
+    @property
+    def transform(self):
+        transform_list = [transforms.RandomHorizontalFlip(),
+                          transforms.ToTensor(),
+                          self.get_normalization_transform()]
+        if self.image_size != self.IMG_SIZE:
+            transform_list = [transforms.Resize(self.image_size), transforms.RandomCrop(self.image_size, padding=4)] + transform_list
+        else:
+            transform_list = [transforms.RandomCrop(64, padding=4)] + transform_list
+        transform = transforms.Compose(transform_list)
+        return transform
+
     def get_transform(self):
-        transform = transforms.Compose(
-            [transforms.ToPILImage(), self.TRANSFORM])
+        transform = transforms.Compose([transforms.ToPILImage(), self.transform])
         return transform
 
     @staticmethod

@@ -11,22 +11,22 @@ from backbones.MNISTMLP import MNISTMLP
 from PIL import Image
 from torchvision.datasets import MNIST
 
-from datasets.utils.continual_dataset import (ContinualDataset,
-                                              store_masked_loaders)
+from datasets.utils.continual_benchmark import (ContinualBenchmark,
+                                                store_masked_loaders)
 from datasets.utils.validation import get_train_val
 from utils.conf import base_path_dataset as base_path
 
 
-class MyMNIST(MNIST):
+class TrainMNIST(MNIST):
     """
     Overrides the MNIST dataset to change the getitem function.
     """
 
-    def __init__(self, root, train=True, transform=None,
+    def __init__(self, root, train=True, transform=None, not_aug_transform=None,
                  target_transform=None, download=False) -> None:
-        self.not_aug_transform = transforms.ToTensor()
-        super(MyMNIST, self).__init__(root, train,
-                                      transform, target_transform, download)
+        self.not_aug_transform = not_aug_transform
+        super(TrainMNIST, self).__init__(root, train,
+                                         transform, target_transform, download)
 
     def __getitem__(self, index: int) -> Tuple[Image.Image, int, Image.Image]:
         """
@@ -53,24 +53,24 @@ class MyMNIST(MNIST):
         return img, target, original_img
 
 
-class SequentialMNIST(ContinualDataset):
+class SequentialMNIST(ContinualBenchmark):
 
     NAME = 'seq-mnist'
     SETTING = 'class-il'
     N_CLASSES_PER_TASK = 2
+    N_CLASSES = 10
     N_TASKS = 5
-    TRANSFORM = None
+    IMG_SIZE = 28
 
     def get_data_loaders(self):
-        transform = transforms.ToTensor()
-        train_dataset = MyMNIST(base_path() + 'MNIST',
-                                train=True, download=True, transform=transform)
+        train_dataset = TrainMNIST(base_path() + 'MNIST',
+                                   train=True, download=True, transform=self.transform, not_aug_transform=self.transform)
         if self.args.validation:
             train_dataset, test_dataset = get_train_val(train_dataset,
-                                                        transform, self.NAME)
+                                                        self.transform, self.NAME)
         else:
             test_dataset = MNIST(base_path() + 'MNIST',
-                                 train=False, download=True, transform=transform)
+                                 train=False, download=True, transform=self.transform)
 
         train, test = store_masked_loaders(train_dataset, test_dataset, self)
         return train, test
@@ -80,9 +80,17 @@ class SequentialMNIST(ContinualDataset):
         return MNISTMLP(28 * 28, SequentialMNIST.N_TASKS
                         * SequentialMNIST.N_CLASSES_PER_TASK)
 
-    @staticmethod
-    def get_transform():
-        return None
+    @property
+    def transform(self):
+        transform_list = [transforms.ToTensor()]
+        if self.image_size != self.IMG_SIZE:
+            transform_list = [transforms.Resize(self.image_size)] + transform_list
+        transform = transforms.Compose(transform_list)
+        return transform
+
+    def get_transform(self):
+        transform = transforms.Compose([transforms.ToPILImage(), self.transform])
+        return transform
 
     @staticmethod
     def get_loss():

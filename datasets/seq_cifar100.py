@@ -13,32 +13,32 @@ from PIL import Image
 from torchvision.datasets import CIFAR100
 
 from datasets.transforms.denormalization import DeNormalize
-from datasets.utils.continual_dataset import (ContinualDataset,
-                                              store_masked_loaders)
+from datasets.utils.continual_benchmark import (ContinualBenchmark,
+                                                store_masked_loaders)
 from datasets.utils.validation import get_train_val
 from utils.conf import base_path_dataset as base_path
 from torchvision.models import mobilenet_v2
 
 
-class TCIFAR100(CIFAR100):
+class TestCIFAR100(CIFAR100):
     """Workaround to avoid printing the already downloaded messages."""
 
     def __init__(self, root, train=True, transform=None,
                  target_transform=None, download=False) -> None:
         self.root = root
-        super(TCIFAR100, self).__init__(root, train, transform, target_transform, download=not self._check_integrity())
+        super(TestCIFAR100, self).__init__(root, train, transform, target_transform, download=not self._check_integrity())
 
 
-class MyCIFAR100(CIFAR100):
+class TrainCIFAR100(CIFAR100):
     """
     Overrides the CIFAR100 dataset to change the getitem function.
     """
 
-    def __init__(self, root, train=True, transform=None,
+    def __init__(self, root, train=True, transform=None, not_aug_transform=None,
                  target_transform=None, download=False) -> None:
-        self.not_aug_transform = transforms.Compose([transforms.ToTensor()])
+        self.not_aug_transform = not_aug_transform
         self.root = root
-        super(MyCIFAR100, self).__init__(root, train, transform, target_transform, not self._check_integrity())
+        super(TrainCIFAR100, self).__init__(root, train, transform, target_transform, not self._check_integrity())
 
     def __getitem__(self, index: int) -> Tuple[Image.Image, int, Image.Image]:
         """
@@ -63,52 +63,55 @@ class MyCIFAR100(CIFAR100):
         if hasattr(self, 'logits'):
             return img, target, not_aug_img, self.logits[index]
 
+        # TODO check if images here have proper size
         return img, target, not_aug_img
 
 
-class SequentialCIFAR100(ContinualDataset):
+class SequentialCIFAR100(ContinualBenchmark):
 
     NAME = 'seq-cifar100'
     SETTING = 'class-il'
     N_CLASSES = 100
     N_TASKS = 20
     N_CLASSES_PER_TASK = N_CLASSES // N_TASKS
-    TRANSFORM = transforms.Compose(
-        [transforms.RandomCrop(32, padding=4),
-         transforms.RandomHorizontalFlip(),
-         transforms.ToTensor(),
-         transforms.Normalize((0.5071, 0.4867, 0.4408),
-                              (0.2675, 0.2565, 0.2761))])
-
-    def get_examples_number(self):
-        train_dataset = MyCIFAR100(base_path() + 'CIFAR10', train=True,
-                                   download=True)
-        return len(train_dataset.data)
+    IMG_SIZE = 32
 
     def get_data_loaders(self):
-        transform = self.TRANSFORM
-
+        not_aug_transform = transforms.Compose([transforms.ToTensor()])
         test_transform = transforms.Compose(
             [transforms.ToTensor(), self.get_normalization_transform()])
+        if self.image_size != self.IMG_SIZE:
+            not_aug_transform.transforms.insert(0, transforms.Resize(self.image_size))
+            test_transform.transforms.insert(0, transforms.Resize(self.image_size))
 
-        train_dataset = MyCIFAR100(base_path() + 'CIFAR100', train=True,
-                                   download=True, transform=transform)
+        train_dataset = TrainCIFAR100(base_path() + 'CIFAR100', train=True,
+                                      download=True, transform=self.transform, not_aug_transform=not_aug_transform)
         if self.args.validation:
             train_dataset, test_dataset = get_train_val(train_dataset,
                                                         test_transform, self.NAME)
         else:
-            test_dataset = TCIFAR100(base_path() + 'CIFAR100', train=False,
-                                     download=True, transform=test_transform)
+            test_dataset = TestCIFAR100(base_path() + 'CIFAR100', train=False,
+                                        download=True, transform=test_transform)
 
         self.permute_tasks(train_dataset, test_dataset)
         train, test = store_masked_loaders(train_dataset, test_dataset, self)
 
         return train, test
 
-    @staticmethod
-    def get_transform():
-        transform = transforms.Compose(
-            [transforms.ToPILImage(), SequentialCIFAR100.TRANSFORM])
+    @property
+    def transform(self):
+        transform_list = [transforms.RandomHorizontalFlip(),
+                          transforms.ToTensor(),
+                          self.get_normalization_transform()]
+        if self.image_size != self.IMG_SIZE:
+            transform_list = [transforms.Resize(self.image_size), transforms.RandomCrop(self.image_size, padding=4)] + transform_list
+        else:
+            transform_list = [transforms.RandomCrop(32, padding=4)] + transform_list
+        transform = transforms.Compose(transform_list)
+        return transform
+
+    def get_transform(self):
+        transform = transforms.Compose([transforms.ToPILImage(), self.transform])
         return transform
 
     def get_backbone(self):

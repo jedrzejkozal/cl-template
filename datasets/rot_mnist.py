@@ -9,10 +9,10 @@ from backbones.MNISTMLP import MNISTMLP
 
 from datasets.perm_mnist import store_mnist_loaders
 from datasets.transforms.rotation import Rotation
-from datasets.utils.continual_dataset import ContinualDataset
+from datasets.utils.continual_benchmark import ContinualBenchmark
 
 
-class RotatedMNIST(ContinualDataset):
+class RotatedMNIST(ContinualBenchmark):
     NAME = 'rot-mnist'
     SETTING = 'domain-il'
     N_CLASSES_PER_TASK = 10

@@ -10,7 +10,7 @@ from typing import Tuple
 
 import torch
 from datasets import get_dataset
-from datasets.utils.continual_dataset import ContinualDataset
+from datasets.utils.continual_benchmark import ContinualBenchmark
 from models.utils.continual_model import ContinualModel
 
 from utils.loggers import *
@@ -18,7 +18,7 @@ from utils.mlflow_logger import MLFlowLogger
 from utils.status import ProgressBar
 
 
-def mask_classes(outputs: torch.Tensor, dataset: ContinualDataset, k: int) -> None:
+def mask_classes(outputs: torch.Tensor, dataset: ContinualBenchmark, k: int) -> None:
     """
     Given the output tensor, the dataset at hand and the current task,
     masks the former by setting the responses for the other tasks at -inf.
@@ -32,7 +32,7 @@ def mask_classes(outputs: torch.Tensor, dataset: ContinualDataset, k: int) -> No
             dataset.N_TASKS * dataset.N_CLASSES_PER_TASK] = -float('inf')
 
 
-def evaluate(model: ContinualModel, dataset: ContinualDataset, last=False) -> Tuple[list, list]:
+def evaluate(model: ContinualModel, dataset: ContinualBenchmark, last=False) -> Tuple[list, list]:
     """
     Evaluates the accuracy of the model for each past task.
     :param model: the model to be evaluated
@@ -75,7 +75,7 @@ def evaluate(model: ContinualModel, dataset: ContinualDataset, last=False) -> Tu
     return accs, accs_mask_classes
 
 
-def train(model: ContinualModel, dataset: ContinualDataset,
+def train(model: ContinualModel, dataset: ContinualBenchmark,
           args: Namespace) -> None:
     """
     The training process, including evaluations and loggers.

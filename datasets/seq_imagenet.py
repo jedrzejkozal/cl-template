@@ -14,13 +14,13 @@ from PIL import Image
 from torchvision.datasets import ImageFolder
 
 from datasets.transforms.denormalization import DeNormalize
-from datasets.utils.continual_dataset import (ContinualDataset,
-                                              store_masked_loaders)
+from datasets.utils.continual_benchmark import (ContinualBenchmark,
+                                                store_masked_loaders)
 from datasets.utils.validation import get_train_val
 from utils.conf import imagenet_path
 
 
-class TImageNet(ImageFolder):
+class TestImageNet(ImageFolder):
     """Workaround to avoid printing the already downloaded messages."""
 
     def __init__(self, root, split='train', transform=None, target_transform=None) -> None:
@@ -29,17 +29,17 @@ class TImageNet(ImageFolder):
         super().__init__(root, transform=transform, target_transform=target_transform)
 
 
-class MyImageNet(ImageFolder):
+class TrainImageNet(ImageFolder):
     """
     Overrides the ImageNet dataset to change the getitem function.
     """
 
-    def __init__(self, root, split='train', aug_transform=None, tensor_transform=None, target_transform=None) -> None:
+    def __init__(self, root, split='train', transform=None, not_aug_transform=None, target_transform=None) -> None:
         self.not_aug_transform = transforms.Compose([transforms.ToTensor()])
         self.root = root = os.path.join(root, split)
         self.split = split
-        self.tensor_transform = tensor_transform
-        super().__init__(root, transform=aug_transform, target_transform=target_transform)
+        self.not_aug_transform = not_aug_transform
+        super().__init__(root, transform=transform, target_transform=target_transform)
 
     def __getitem__(self, index: int) -> Tuple[Image.Image, int, Image.Image]:
         """
@@ -50,7 +50,7 @@ class MyImageNet(ImageFolder):
         path, target = self.samples[index]
         not_aug_img = self.loader(path)
 
-        not_aug_img = self.tensor_transform(not_aug_img)
+        not_aug_img = self.not_aug_transform(not_aug_img)
         img = self.transform(not_aug_img)
         if self.target_transform is not None:
             target = self.target_transform(target)
@@ -58,7 +58,7 @@ class MyImageNet(ImageFolder):
         return img, target, not_aug_img
 
 
-class SequentialImageNet(ContinualDataset):
+class SequentialImageNet(ContinualBenchmark):
 
     NAME = 'seq-imagenet'
     SETTING = 'class-il'
@@ -66,30 +66,21 @@ class SequentialImageNet(ContinualDataset):
     N_TASKS = 100
     N_CLASSES_PER_TASK = N_CLASSES // N_TASKS
     IMG_SIZE = 224
-    TEST_TRANSFORM = transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize((0.485, 0.456, 0.406),
-                             (0.229, 0.224, 0.225))
-    ])
-    AUG_TRANSFORM = transforms.Compose([
-        transforms.RandomHorizontalFlip(),
-    ])
-
-    # def get_examples_number(self):
-    #     train_dataset = MyImageNet(imagenet_path(), split='train')
-    #     return len(train_dataset.data)
 
     def get_data_loaders(self):
-        test_transform = self.TEST_TRANSFORM
+        not_aug_transform = transforms.Compose([transforms.ToTensor()])
+        test_transform = transforms.Compose([transforms.ToTensor(), self.get_normalization_transform()])
+        if self.image_size != self.IMG_SIZE:
+            not_aug_transform.transforms.insert(0, transforms.Resize(self.image_size))
+            test_transform.transforms.insert(0, transforms.Resize(self.image_size))
 
-        train_dataset = MyImageNet(
-            imagenet_path(), split='train', aug_transform=self.AUG_TRANSFORM, tensor_transform=test_transform)
+        train_dataset = TrainImageNet(
+            imagenet_path(), split='train', transform=self.transform, not_aug_transform=not_aug_transform)
         if self.args.validation:
             train_dataset, test_dataset = get_train_val(train_dataset,
                                                         test_transform, self.NAME)
         else:
-            test_dataset = TImageNet(
+            test_dataset = TestImageNet(
                 imagenet_path(), split='val', transform=test_transform)
 
         self.permute_tasks(train_dataset, test_dataset)
@@ -97,10 +88,20 @@ class SequentialImageNet(ContinualDataset):
 
         return train, test
 
-    @staticmethod
-    def get_transform():
-        transform = transforms.Compose(
-            [transforms.ToPILImage(), SequentialImageNet.TEST_TRANSFORM, SequentialImageNet.AUG_TRANSFORM])
+    @property
+    def transform(self):
+        transform_list = [transforms.RandomHorizontalFlip(),
+                          transforms.ToTensor(),
+                          self.get_normalization_transform()]
+        if self.image_size != self.IMG_SIZE:
+            transform_list = [transforms.Resize(self.image_size), transforms.RandomCrop(self.image_size, padding=4)] + transform_list
+        else:
+            transform_list = [transforms.RandomCrop(224, padding=4)] + transform_list
+        transform = transforms.Compose(transform_list)
+        return transform
+
+    def get_transform(self):
+        transform = transforms.Compose([transforms.ToPILImage(), self.transform])
         return transform
 
     def get_backbone(self):

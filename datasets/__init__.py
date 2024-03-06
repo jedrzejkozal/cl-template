@@ -8,7 +8,7 @@ import inspect
 import os
 from argparse import Namespace
 
-from datasets.utils.continual_dataset import ContinualDataset
+from datasets.utils.continual_benchmark import ContinualBenchmark
 
 
 def get_all_models():
@@ -19,7 +19,7 @@ def get_all_models():
 NAMES = {}
 for model in get_all_models():
     mod = importlib.import_module('datasets.' + model)
-    dataset_classes_name = [x for x in mod.__dir__() if 'type' in str(type(getattr(mod, x))) and 'ContinualDataset' in str(inspect.getmro(getattr(mod, x))[1:])]
+    dataset_classes_name = [x for x in mod.__dir__() if 'type' in str(type(getattr(mod, x))) and 'ContinualBenchmark' in str(inspect.getmro(getattr(mod, x))[1:])]
     for d in dataset_classes_name:
         c = getattr(mod, d)
         NAMES[c.NAME] = c
@@ -30,7 +30,7 @@ for model in get_all_models():
         NAMES[c.NAME] = c
 
 
-def get_dataset(args: Namespace) -> ContinualDataset:
+def get_dataset(args: Namespace) -> ContinualBenchmark:
     """
     Creates and returns a continual dataset.
     :param args: the arguments which contains the hyperparameters

@@ -13,30 +13,30 @@ from torchvision.datasets import CIFAR10
 
 from datasets.seq_tinyimagenet import base_path
 from datasets.transforms.denormalization import DeNormalize
-from datasets.utils.continual_dataset import (ContinualDataset,
-                                              store_masked_loaders)
+from datasets.utils.continual_benchmark import (ContinualBenchmark,
+                                                store_masked_loaders)
 from datasets.utils.validation import get_train_val
 
 
-class TCIFAR10(CIFAR10):
+class TestCIFAR10(CIFAR10):
     """Workaround to avoid printing the already downloaded messages."""
 
     def __init__(self, root, train=True, transform=None,
                  target_transform=None, download=False) -> None:
         self.root = root
-        super(TCIFAR10, self).__init__(root, train, transform, target_transform, download=not self._check_integrity())
+        super(TestCIFAR10, self).__init__(root, train, transform, target_transform, download=not self._check_integrity())
 
 
-class MyCIFAR10(CIFAR10):
+class TrainCIFAR10(CIFAR10):
     """
     Overrides the CIFAR10 dataset to change the getitem function.
     """
 
-    def __init__(self, root, train=True, transform=None,
+    def __init__(self, root, train=True, transform=None, not_aug_transform=None,
                  target_transform=None, download=False) -> None:
-        self.not_aug_transform = transforms.Compose([transforms.ToTensor()])
+        self.not_aug_transform = not_aug_transform
         self.root = root
-        super(MyCIFAR10, self).__init__(root, train, transform, target_transform, download=not self._check_integrity())
+        super(TrainCIFAR10, self).__init__(root, train, transform, target_transform, download=not self._check_integrity())
 
     def __getitem__(self, index: int) -> Tuple[Image.Image, int, Image.Image]:
         """
@@ -64,43 +64,50 @@ class MyCIFAR10(CIFAR10):
         return img, target, not_aug_img
 
 
-class SequentialCIFAR10(ContinualDataset):
+class SequentialCIFAR10(ContinualBenchmark):
 
     NAME = 'seq-cifar10'
     SETTING = 'class-il'
     N_CLASSES = 10
     N_TASKS = 5
     N_CLASSES_PER_TASK = N_CLASSES // N_TASKS
-    TRANSFORM = transforms.Compose(
-        [transforms.RandomCrop(32, padding=4),
-         transforms.RandomHorizontalFlip(),
-         transforms.ToTensor(),
-         transforms.Normalize((0.4914, 0.4822, 0.4465),
-                              (0.2470, 0.2435, 0.2615))])
+    IMG_SIZE = 32
 
     def get_data_loaders(self):
-        transform = self.TRANSFORM
-
+        not_aug_transform = transforms.Compose([transforms.ToTensor()])
         test_transform = transforms.Compose(
             [transforms.ToTensor(), self.get_normalization_transform()])
+        if self.image_size != self.IMG_SIZE:
+            not_aug_transform.transforms.insert(0, transforms.Resize(self.image_size))
+            test_transform.transforms.insert(0, transforms.Resize(self.image_size))
 
-        train_dataset = MyCIFAR10(base_path() + 'CIFAR10', train=True,
-                                  download=True, transform=transform)
+        train_dataset = TrainCIFAR10(base_path() + 'CIFAR10', train=True,
+                                     download=True, transform=self.transform, not_aug_transform=not_aug_transform)
         if self.args.validation:
             train_dataset, test_dataset = get_train_val(train_dataset,
                                                         test_transform, self.NAME)
         else:
-            test_dataset = TCIFAR10(base_path() + 'CIFAR10', train=False,
-                                    download=True, transform=test_transform)
+            test_dataset = TestCIFAR10(base_path() + 'CIFAR10', train=False,
+                                       download=True, transform=test_transform)
 
         self.permute_tasks(train_dataset, test_dataset)
         train, test = store_masked_loaders(train_dataset, test_dataset, self)
         return train, test
 
-    @staticmethod
-    def get_transform():
-        transform = transforms.Compose(
-            [transforms.ToPILImage(), SequentialCIFAR10.TRANSFORM])
+    @property
+    def transform(self):
+        transform_list = [transforms.RandomHorizontalFlip(),
+                          transforms.ToTensor(),
+                          self.get_normalization_transform()]
+        if self.image_size != self.IMG_SIZE:
+            transform_list = [transforms.Resize(self.image_size), transforms.RandomCrop(self.image_size, padding=4)] + transform_list
+        else:
+            transform_list = [transforms.RandomCrop(32, padding=4)] + transform_list
+        transform = transforms.Compose(transform_list)
+        return transform
+
+    def get_transform(self):
+        transform = transforms.Compose([transforms.ToPILImage(), self.transform])
         return transform
 
     def get_backbone(self):

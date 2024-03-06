@@ -18,6 +18,7 @@ def add_experiment_args(parser: ArgumentParser) -> None:
                         choices=DATASET_NAMES,
                         help='Which dataset to perform experiments on.')
     parser.add_argument('--half_data_in_first_task', action='store_true', help='use half of data for first expirience')
+    parser.add_argument('--img_size', type=int, default=None)
     parser.add_argument('--model', type=str, required=True,
                         help='Model name.', choices=get_all_models())
 

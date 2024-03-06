@@ -12,7 +12,7 @@ import torch.optim
 from torch.utils.data import DataLoader, Dataset
 
 
-class ContinualDataset:
+class ContinualBenchmark:
     """
     Continual learning evaluation setting.
     """
@@ -31,6 +31,7 @@ class ContinualDataset:
         self.test_loaders = []
         self.i = 0
         self.args = args
+        self.image_size = args.img_size
 
         if not self.args.half_data_in_first_task and self.N_CLASSES // self.N_TASKS < 2:
             raise ValueError(f"Each task should have at least 2 classes, got N_CLASSES={self.N_CLASSES}, N_TASKS={self.N_TASKS}")
@@ -53,10 +54,16 @@ class ContinualDataset:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def get_transform() -> nn.Module:
+    @property
+    def transform(self) -> nn.Module:
         """
         Returns the transform to be used for to the current dataset.
+        """
+        raise NotImplementedError
+
+    def get_transform(self) -> nn.Module:
+        """
+        Returns the transform for the rehersal buffer
         """
         raise NotImplementedError
 
@@ -113,7 +120,7 @@ class ContinualDataset:
 
 
 def store_masked_loaders(train_dataset: Dataset, test_dataset: Dataset,
-                         setting: ContinualDataset) -> Tuple[DataLoader, DataLoader]:
+                         setting: ContinualBenchmark) -> Tuple[DataLoader, DataLoader]:
     """
     Divides the dataset into tasks.
     :param train_dataset: train dataset
@@ -148,7 +155,7 @@ def store_masked_loaders(train_dataset: Dataset, test_dataset: Dataset,
 
 
 def get_previous_train_loader(train_dataset: Dataset, batch_size: int,
-                              setting: ContinualDataset) -> DataLoader:
+                              setting: ContinualBenchmark) -> DataLoader:
     """
     Creates a dataloader for the previous task.
     :param train_dataset: the entire training set

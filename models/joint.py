@@ -59,7 +59,7 @@ class Joint(ContinualModel):
                     all_data = np.concatenate([all_data, self.old_data[i]])
                     all_labels = np.concatenate([all_labels, self.old_labels[i]])
 
-            transform = dataset.TRANSFORM if dataset.TRANSFORM is not None else transforms.ToTensor()
+            transform = dataset.transform if dataset.transform is not None else transforms.ToTensor()
             temp_dataset = ValidationDataset(all_data, all_labels, transform=transform)
             loader = torch.utils.data.DataLoader(temp_dataset, batch_size=self.args.batch_size, shuffle=True)
 

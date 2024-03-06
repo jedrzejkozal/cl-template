@@ -13,7 +13,7 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import MNIST
 
 from datasets.transforms.permutation import Permutation
-from datasets.utils.continual_dataset import ContinualDataset
+from datasets.utils.continual_benchmark import ContinualBenchmark
 from datasets.utils.validation import get_train_val
 from utils.conf import base_path_dataset as base_path
 
@@ -69,7 +69,7 @@ class MyMNIST(MNIST):
         return img, target, img
 
 
-class PermutedMNIST(ContinualDataset):
+class PermutedMNIST(ContinualBenchmark):
 
     NAME = 'perm-mnist'
     SETTING = 'domain-il'

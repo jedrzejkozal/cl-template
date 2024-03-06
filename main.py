@@ -16,7 +16,7 @@ import setproctitle
 import torch
 
 from datasets import NAMES as DATASET_NAMES
-from datasets import ContinualDataset, get_dataset
+from datasets import ContinualBenchmark, get_dataset
 from backbones import get_backbone
 from models import get_all_models, get_model
 from utils.args import add_management_args
@@ -111,8 +111,11 @@ def run_experiment(args):
     dataset = get_dataset(args)
     type(dataset).N_TASKS = args.n_tasks
     type(dataset).N_CLASSES_PER_TASK = type(dataset).N_CLASSES // type(dataset).N_TASKS
+    if args.img_size is None:
+        args.img_size = dataset.IMG_SIZE
+        dataset.image_size = dataset.IMG_SIZE
 
-    if args.n_epochs is None and isinstance(dataset, ContinualDataset):
+    if args.n_epochs is None and isinstance(dataset, ContinualBenchmark):
         args.n_epochs = dataset.get_epochs()
     if args.batch_size is None:
         args.batch_size = dataset.get_batch_size()
@@ -140,7 +143,7 @@ def run_experiment(args):
     setproctitle.setproctitle('{}_{}_{}'.format(args.model, args.buffer_size if 'buffer_size' in args else 0, args.dataset))
 
     # args.n_epochs = 1
-    if isinstance(dataset, ContinualDataset):
+    if isinstance(dataset, ContinualBenchmark):
         train(model, dataset, args)
     else:
         assert not hasattr(model, 'end_task') or model.NAME == 'joint_gcl'
