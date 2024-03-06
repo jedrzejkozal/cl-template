@@ -15,14 +15,14 @@ from torch.utils import model_zoo
 from backbones import MammothBackbone
 
 url_map = {
-    'efficientnet-b0': 'https://github.com/lukemelas/EfficientNet-PyTorch/releases/download/1.0/efficientnet-b0-355c32eb.pth',
-    'efficientnet-b1': 'https://github.com/lukemelas/EfficientNet-PyTorch/releases/download/1.0/efficientnet-b1-f1951068.pth',
-    'efficientnet-b2': 'https://github.com/lukemelas/EfficientNet-PyTorch/releases/download/1.0/efficientnet-b2-8bb594d6.pth',
-    'efficientnet-b3': 'https://github.com/lukemelas/EfficientNet-PyTorch/releases/download/1.0/efficientnet-b3-5fb5a3c3.pth',
-    'efficientnet-b4': 'https://github.com/lukemelas/EfficientNet-PyTorch/releases/download/1.0/efficientnet-b4-6ed6700e.pth',
-    'efficientnet-b5': 'https://github.com/lukemelas/EfficientNet-PyTorch/releases/download/1.0/efficientnet-b5-b6417697.pth',
-    'efficientnet-b6': 'https://github.com/lukemelas/EfficientNet-PyTorch/releases/download/1.0/efficientnet-b6-c76e70fd.pth',
-    'efficientnet-b7': 'https://github.com/lukemelas/EfficientNet-PyTorch/releases/download/1.0/efficientnet-b7-dcc49843.pth',
+    'efficientnet_b0': 'https://github.com/lukemelas/EfficientNet-PyTorch/releases/download/1.0/efficientnet-b0-355c32eb.pth',
+    'efficientnet_b1': 'https://github.com/lukemelas/EfficientNet-PyTorch/releases/download/1.0/efficientnet_b1-f1951068.pth',
+    'efficientnet_b2': 'https://github.com/lukemelas/EfficientNet-PyTorch/releases/download/1.0/efficientnet-b2-8bb594d6.pth',
+    'efficientnet_b3': 'https://github.com/lukemelas/EfficientNet-PyTorch/releases/download/1.0/efficientnet-b3-5fb5a3c3.pth',
+    'efficientnet_b4': 'https://github.com/lukemelas/EfficientNet-PyTorch/releases/download/1.0/efficientnet-b4-6ed6700e.pth',
+    'efficientnet_b5': 'https://github.com/lukemelas/EfficientNet-PyTorch/releases/download/1.0/efficientnet-b5-b6417697.pth',
+    'efficientnet_b6': 'https://github.com/lukemelas/EfficientNet-PyTorch/releases/download/1.0/efficientnet-b6-c76e70fd.pth',
+    'efficientnet_b7': 'https://github.com/lukemelas/EfficientNet-PyTorch/releases/download/1.0/efficientnet-b7-dcc49843.pth',
 }
 
 
@@ -414,15 +414,15 @@ def efficientnet_params(model_name):
     """
     params_dict = {
         # Coefficients:   width,depth,res,dropout
-        'efficientnet-b0': (1.0, 1.0, 224, 0.2),
-        'efficientnet-b1': (1.0, 1.1, 240, 0.2),
-        'efficientnet-b2': (1.1, 1.2, 260, 0.3),
-        'efficientnet-b3': (1.2, 1.4, 300, 0.3),
-        'efficientnet-b4': (1.4, 1.8, 380, 0.4),
-        'efficientnet-b5': (1.6, 2.2, 456, 0.4),
-        'efficientnet-b6': (1.8, 2.6, 528, 0.5),
-        'efficientnet-b7': (2.0, 3.1, 600, 0.5),
-        'efficientnet-b8': (2.2, 3.6, 672, 0.5),
+        'efficientnet_b0': (1.0, 1.0, 224, 0.2),
+        'efficientnet_b1': (1.0, 1.1, 240, 0.2),
+        'efficientnet_b2': (1.1, 1.2, 260, 0.3),
+        'efficientnet_b3': (1.2, 1.4, 300, 0.3),
+        'efficientnet_b4': (1.4, 1.8, 380, 0.4),
+        'efficientnet_b5': (1.6, 2.2, 456, 0.4),
+        'efficientnet_b6': (1.8, 2.6, 528, 0.5),
+        'efficientnet_b7': (2.0, 3.1, 600, 0.5),
+        'efficientnet_b8': (2.2, 3.6, 672, 0.5),
         'efficientnet-l2': (4.3, 5.3, 800, 0.5),
     }
     return params_dict[model_name]
@@ -548,24 +548,24 @@ def efficientnet_params(model_name):
     """Get efficientnet params based on model name."""
     params_dict = {
         # (width_coefficient, depth_coefficient, resolution, dropout_rate)
-        'efficientnet-b0': (1.0, 1.0, 224, 0.2),
-        'efficientnet-b1': (1.0, 1.1, 240, 0.2),
-        'efficientnet-b2': (1.1, 1.2, 260, 0.3),
-        'efficientnet-b3': (1.2, 1.4, 300, 0.3),
-        'efficientnet-b4': (1.4, 1.8, 380, 0.4),
-        'efficientnet-b5': (1.6, 2.2, 456, 0.4),
-        'efficientnet-b6': (1.8, 2.6, 528, 0.5),
-        'efficientnet-b7': (2.0, 3.1, 600, 0.5),
-        'efficientnet-b8': (2.2, 3.6, 672, 0.5),
-        'efficientnet-l2': (4.3, 5.3, 800, 0.5),
+        'efficientnet_b0': (1.0, 1.0, 224, 0.2),
+        'efficientnet_b1': (1.0, 1.1, 240, 0.2),
+        'efficientnet_b2': (1.1, 1.2, 260, 0.3),
+        'efficientnet_b3': (1.2, 1.4, 300, 0.3),
+        'efficientnet_b4': (1.4, 1.8, 380, 0.4),
+        'efficientnet_b5': (1.6, 2.2, 456, 0.4),
+        'efficientnet_b6': (1.8, 2.6, 528, 0.5),
+        'efficientnet_b7': (2.0, 3.1, 600, 0.5),
+        'efficientnet_b8': (2.2, 3.6, 672, 0.5),
+        'efficientnet_l2': (4.3, 5.3, 800, 0.5),
     }
     return params_dict[model_name]
 
 
 VALID_MODELS = (
-    'efficientnet-b0', 'efficientnet-b1', 'efficientnet-b2', 'efficientnet-b3',
-    'efficientnet-b4', 'efficientnet-b5', 'efficientnet-b6', 'efficientnet-b7',
-    'efficientnet-b8',
+    'efficientnet_b0', 'efficientnet_b1', 'efficientnet_b2', 'efficientnet_b3',
+    'efficientnet_b4', 'efficientnet_b5', 'efficientnet_b6', 'efficientnet_b7',
+    'efficientnet_b8',
 )
 
 
