@@ -17,6 +17,8 @@ from datasets.utils.continual_benchmark import ContinualBenchmark
 from datasets.utils.validation import get_train_val
 from utils.conf import base_path_dataset as base_path
 from torchvision.models import mobilenet_v2
+from datasets.utils.additional_augmentations import CIFAR10Policy
+from datasets.utils.ops import Cutout
 
 
 class TestCIFAR100(CIFAR100):
@@ -99,7 +101,10 @@ class SequentialCIFAR100(ContinualBenchmark):
     @property
     def transform(self):
         transform_list = [transforms.RandomHorizontalFlip(),
+                          transforms.ColorJitter(brightness=63 / 255),
+                          CIFAR10Policy(),
                           transforms.ToTensor(),
+                          Cutout(n_holes=1, length=16),
                           self.get_normalization_transform()]
         if self.image_size != self.IMG_SIZE:
             transform_list = [transforms.Resize(self.image_size), transforms.RandomCrop(self.image_size, padding=4)] + transform_list

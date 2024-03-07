@@ -71,7 +71,10 @@ def evaluate(model: ContinualModel, dataset: ContinualBenchmark, last=False) -> 
 
     model.net.train(status)
     print('evaluation acc:')
-    print(accs)
+    accs_str = ''
+    for a in accs:
+        accs_str += '{:.2f}, '.format(a)
+    print(accs_str)
     return accs, accs_mask_classes
 
 
@@ -119,8 +122,13 @@ def train(model: ContinualModel, dataset: ContinualBenchmark,
             if dataset.SETTING == 'class-il':
                 results_mask_classes[t-1] = results_mask_classes[t-1] + accs[1]
 
-        scheduler = dataset.get_scheduler(model, args)
-        for epoch in range(model.args.n_epochs):
+        if hasattr(model, 'get_scheduler'):
+            scheduler = model.get_scheduler()
+        else:
+            scheduler = dataset.get_scheduler(model, args)
+
+        n_epochs = model.get_epochs() if hasattr(model, 'get_epochs') else model.args.n_epochs
+        for epoch in range(n_epochs):
             if args.model == 'joint':
                 continue
             for i, data in enumerate(train_loader):
