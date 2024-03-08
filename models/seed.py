@@ -274,6 +274,9 @@ class SEED(ContinualModel):
                         gmm = GaussianMixture(self.gmms, class_features.shape[1], covariance_type=cov_type, eps=eps).to(self.device)
                         gmm.fit(class_features, delta=1e-3, n_iter=100)
                     except RuntimeError:
+                        if eps == float('inf'):
+                            raise ValueError('Float overflow during gnn fitting')
+
                         eps = 10 * eps
                         print(f"WARNING: Covariance matrix is singular. Increasing eps to: {eps:.7f} but this may hurt results")
                     else:
