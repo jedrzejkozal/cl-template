@@ -73,6 +73,13 @@ class MLFlowLogger(utils.loggers.Logger):
             self.log_metric('mean_acc_class_il', mean_acc_class_il)
             self.log_metric('mean_acc_task_il', mean_acc_task_il)
 
+    def log_train_acc(self, acc_class_il, acc_task_il):
+        if self.setting == 'class-il':
+            self.log_metric('train_acc_class_il', acc_class_il)
+            self.log_metric('train_acc_task_il', acc_task_il)
+        else:
+            raise NotImplementedError
+
     def log_fullacc(self, accs):
         if self.setting == 'class-il':
             acc_class_il, acc_task_il = accs

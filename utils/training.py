@@ -42,40 +42,52 @@ def evaluate(model: ContinualModel, dataset: ContinualBenchmark, last=False) -> 
     """
     status = model.net.training
     model.net.eval()
-    accs, accs_mask_classes = [], []
+    test_accs, test_accs_mask_classes = [], []
     for k, test_loader in enumerate(dataset.test_loaders):
         if last and k < len(dataset.test_loaders) - 1:
             continue
-        correct, correct_mask_classes, total = 0.0, 0.0, 0.0
-        for data in test_loader:
-            with torch.no_grad():
-                inputs, labels = data
-                inputs, labels = inputs.to(model.device), labels.to(model.device)
-                if 'class-il' not in model.COMPATIBILITY:
-                    outputs = model(inputs, k)
-                else:
-                    outputs = model(inputs)
+        acc_class_incr, acc_task_incr = compute_acc(model, dataset, k, test_loader)
+        test_accs.append(acc_class_incr)
+        test_accs_mask_classes.append(acc_task_incr)
 
-                _, pred = torch.max(outputs.data, 1)
-                correct += torch.sum(pred == labels).item()
-                total += labels.shape[0]
-
-                if dataset.SETTING == 'class-il':
-                    mask_classes(outputs, dataset, k)
-                    _, pred = torch.max(outputs.data, 1)
-                    correct_mask_classes += torch.sum(pred == labels).item()
-
-        accs.append(correct / total * 100
-                    if 'class-il' in model.COMPATIBILITY else 0)
-        accs_mask_classes.append(correct_mask_classes / total * 100)
+    train_acc, train_acc_mask_classes = compute_acc(model, dataset, k, dataset.train_loader)
 
     model.net.train(status)
-    print('evaluation acc:')
+    print('\nevaluation task train acc:')
+    print('{:.2f}'.format(train_acc))
+    print('\nevaluation task test accs:')
     accs_str = ''
-    for a in accs:
+    for a in test_accs:
         accs_str += '{:.2f}, '.format(a)
+    accs_str = accs_str[:-2]
     print(accs_str)
-    return accs, accs_mask_classes
+    return train_acc, train_acc_mask_classes, test_accs, test_accs_mask_classes
+
+
+def compute_acc(model, dataset, k, dataloader):
+    correct, correct_mask_classes, total = 0.0, 0.0, 0.0
+    for data in dataloader:
+        with torch.no_grad():
+            inputs = data[0]
+            labels = data[1]
+            inputs, labels = inputs.to(model.device), labels.to(model.device)
+            if 'class-il' not in model.COMPATIBILITY:
+                outputs = model(inputs, k)
+            else:
+                outputs = model(inputs)
+
+            _, pred = torch.max(outputs.data, 1)
+            correct += torch.sum(pred == labels).item()
+            total += labels.shape[0]
+
+            if dataset.SETTING == 'class-il':
+                mask_classes(outputs, dataset, k)
+                _, pred = torch.max(outputs.data, 1)
+                correct_mask_classes += torch.sum(pred == labels).item()
+
+    acc_class_incr = correct / total * 100 if 'class-il' in model.COMPATIBILITY else 0
+    acc_task_incr = correct_mask_classes / total * 100
+    return acc_class_incr, acc_task_incr
 
 
 def train(model: ContinualModel, dataset: ContinualBenchmark,
@@ -103,7 +115,7 @@ def train(model: ContinualModel, dataset: ContinualBenchmark,
             model.net.train()
             _, _ = dataset_copy.get_data_loaders()
         if model.NAME != 'icarl' and model.NAME != 'pnn':
-            random_results_class, random_results_task = evaluate(model, dataset_copy)
+            _, _, random_results_class, random_results_task = evaluate(model, dataset_copy)
 
     if os.path.exists('old_model.pt'):
         os.remove('old_model.pt')
@@ -118,9 +130,9 @@ def train(model: ContinualModel, dataset: ContinualBenchmark,
             model.begin_task(dataset)
         if t and not args.ignore_other_metrics and not args.debug:
             accs = evaluate(model, dataset, last=True)
-            results[t-1] = results[t-1] + accs[0]
+            results[t-1] = results[t-1] + accs[2]
             if dataset.SETTING == 'class-il':
-                results_mask_classes[t-1] = results_mask_classes[t-1] + accs[1]
+                results_mask_classes[t-1] = results_mask_classes[t-1] + accs[3]
 
         if hasattr(model, 'get_scheduler'):
             scheduler = model.get_scheduler()
@@ -161,19 +173,21 @@ def train(model: ContinualModel, dataset: ContinualBenchmark,
         #     logger.log_artifact('net.pt', f'net_model_task_{t}')
 
         accs = evaluate(model, dataset)
-        results.append(accs[0])
-        results_mask_classes.append(accs[1])
+        results.append(accs[2])
+        results_mask_classes.append(accs[3])
 
-        mean_acc = np.mean(accs, axis=1)
+        mean_acc = np.mean(accs[2:], axis=1)
         print_mean_accuracy(mean_acc, t + 1, dataset.SETTING)
 
         if not args.disable_log and not args.debug:
             logger.log(mean_acc)
-            logger.log_fullacc(accs)
+            logger.log_fullacc(accs[2:])
+            logger.log_train_acc(accs[0], accs[1])
 
-    if not args.disable_log and not args.ignore_other_metrics and not args.debug:
-        logger.add_bwt(results, results_mask_classes)
+    if not args.disable_log and not args.debug:
         logger.add_forgetting(results, results_mask_classes)
-        if model.NAME != 'icarl' and model.NAME != 'pnn':
-            logger.add_fwt(results, random_results_class,
-                           results_mask_classes, random_results_task)
+        if not args.ignore_other_metrics:
+            logger.add_bwt(results, results_mask_classes)
+            if model.NAME != 'icarl' and model.NAME != 'pnn':
+                logger.add_fwt(results, random_results_class,
+                               results_mask_classes, random_results_task)
