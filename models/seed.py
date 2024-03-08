@@ -127,7 +127,7 @@ class SEED(ContinualModel):
         elif self.args.n_tasks == 20:
             taskcla = [(i, 5) for i in range(20)]
         elif self.args.n_tasks == 50:
-            taskcla = [(i, 5) for i in range(50)]
+            taskcla = [(i, 2) for i in range(50)]
         else:
             raise ValueError("n tasks not supported")
 
