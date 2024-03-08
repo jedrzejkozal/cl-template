@@ -122,7 +122,15 @@ class SEED(ContinualModel):
         network_type = 'resnet32'
         if args.backbone is not None:
             network_type = args.backbone
-        taskcla = [(0, 10), (1, 10), (2, 10), (3, 10), (4, 10), (5, 10), (6, 10), (7, 10), (8, 10), (9, 10)]
+        if self.args.n_tasks == 10:
+            taskcla = [(0, 10), (1, 10), (2, 10), (3, 10), (4, 10), (5, 10), (6, 10), (7, 10), (8, 10), (9, 10)]
+        elif self.args.n_tasks == 20:
+            taskcla = [(i, 5) for i in range(20)]
+        elif self.args.n_tasks == 50:
+            taskcla = [(i, 5) for i in range(50)]
+        else:
+            raise ValueError("n tasks not supported")
+
         self.net = ExtractorEnsemble(taskcla, network_type, self.device)
 
         self.max_experts: int = args.max_experts
@@ -333,7 +341,11 @@ class SEED(ContinualModel):
 
     @torch.no_grad()
     def predict_class_bayes(self, features):
-        log_probs = torch.full((features.shape[0], len(self.experts_distributions), len(self.experts_distributions[0])), fill_value=-1e8, device=features.device)
+        log_probs = torch.full(
+            (features.shape[0],
+             len(self.experts_distributions),
+             len(self.experts_distributions[0])),
+            fill_value=-1e8, device=features.device)
         mask = torch.full_like(log_probs, fill_value=False, dtype=torch.bool)
         for bb_num, _ in enumerate(self.experts_distributions):
             for c, class_gmm in enumerate(self.experts_distributions[bb_num]):
