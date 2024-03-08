@@ -138,10 +138,7 @@ class SEED(ContinualModel):
         self.gmms: int = args.gmms
         self.alpha: float = args.alpha
         self.tau: float = args.tau
-        # self.patience = patience # unused variable in orignal implementation?
         self.use_multivariate = args.use_multivariate
-        # self.use_nmc = args.use_nmc # unused variable in orignal implementation?
-        # self.compensate_drifts = args.compensate_drifts # unused variable in orignal implementation?
         self.net.to(self.device)
         self.experts_distributions = []
         self.shared_layers = []
@@ -166,7 +163,7 @@ class SEED(ContinualModel):
     def begin_task(self, dataset):
         if self.t < self.max_experts:
             if self.initialization_strategy == "random" or self.t == 0:
-                self.net.bbs.append(self.net.bb_fun(self.net.taskcla[self.t][1]))  # , num_features=self.net.num_features))
+                self.net.bbs.append(self.net.bb_fun(self.net.taskcla[self.t][1]))
             else:
                 self.net.bbs.append(copy.deepcopy(self.net.bbs[0]))
             self.current_net = self.net.bbs[self.t]
@@ -288,29 +285,21 @@ class SEED(ContinualModel):
 
     def observe(self, inputs, labels, not_aug_inputs):
         labels -= self.net.task_offset[self.t]
-        if self.t < self.max_experts:
-            # train backbone
-            self.opt.zero_grad()
-            outputs = self.current_net(inputs)
-            # print(outputs.shape)
-            # print(labels)
-            loss = self.loss(outputs, labels)
-            loss.backward()
-            nn.utils.clip_grad_norm_(self.current_net.parameters(), self.clipgrad)
-            self.opt.step()
-        else:
+        self.opt.zero_grad()
+
+        outputs, features = self.current_net(inputs, returnt='all')
+        loss = self.loss(outputs, labels)
+
+        if self.t >= self.max_experts:
             # finetune backbone
-            self.opt.zero_grad()
             with torch.no_grad():
                 old_features = self.old_model(inputs)  # resnet with fc as identity returns features by default
-            outputs, features = self.current_net(inputs, returnt='all')
-
-            ce_loss = self.loss(outputs, labels)
             kd_loss = nn.functional.mse_loss(features, old_features)
-            loss = (1 - self.alpha) * ce_loss + self.alpha * kd_loss
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(self.current_net.parameters(), self.clipgrad)
-            self.opt.step()
+            loss = (1 - self.alpha) * loss + self.alpha * kd_loss
+
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.current_net.parameters(), self.clipgrad)
+        self.opt.step()
 
         return loss.item()
 
