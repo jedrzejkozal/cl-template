@@ -100,12 +100,21 @@ class SequentialCIFAR100(ContinualBenchmark):
 
     @property
     def transform(self):
-        transform_list = [transforms.RandomHorizontalFlip(),
-                          transforms.ColorJitter(brightness=63 / 255),
-                          CIFAR10Policy(),
-                          transforms.ToTensor(),
-                          Cutout(n_holes=1, length=16),
-                          self.get_normalization_transform()]
+        if self.args.additional_augmentations:
+            transform_list = [
+                transforms.RandomHorizontalFlip(),
+                transforms.ColorJitter(brightness=63 / 255),
+                CIFAR10Policy(),
+                transforms.ToTensor(),
+                Cutout(n_holes=1, length=16),
+                self.get_normalization_transform()
+            ]
+        else:
+            transform_list = [
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                self.get_normalization_transform()
+            ]
         if self.image_size != self.IMG_SIZE:
             transform_list = [transforms.Resize(self.image_size), transforms.RandomCrop(self.image_size, padding=4)] + transform_list
         else:
