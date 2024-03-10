@@ -74,7 +74,7 @@ class SequentialImageNet(ContinualBenchmark):
             test_transform.transforms.insert(0, transforms.Resize(self.image_size))
 
         train_dataset = TrainImageNet(
-            imagenet_path(), split='train', transform=self.transform, not_aug_transform=not_aug_transform)
+            imagenet_path(), split='train', transform=self.train_transform, not_aug_transform=not_aug_transform)
         if self.args.validation:
             train_dataset, test_dataset = get_train_val(train_dataset,
                                                         test_transform, self.NAME)
@@ -88,7 +88,7 @@ class SequentialImageNet(ContinualBenchmark):
         return train, test
 
     @property
-    def transform(self):
+    def train_transform(self):
         transform_list = [transforms.RandomHorizontalFlip(),
                           transforms.ToTensor(),
                           self.get_normalization_transform()]
@@ -100,7 +100,7 @@ class SequentialImageNet(ContinualBenchmark):
         return transform
 
     def get_transform(self):
-        transform = transforms.Compose([transforms.ToPILImage(), self.transform])
+        transform = transforms.Compose([transforms.ToPILImage(), self.train_transform])
         return transform
 
     def get_backbone(self):

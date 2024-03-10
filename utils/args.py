@@ -63,7 +63,7 @@ def add_management_args(parser: ArgumentParser) -> None:
     parser.add_argument('--experiment_name', type=str, default='Default')
     parser.add_argument('--parent_run_id', default=None, type=str, help='mlflow parent run id, used for creating nested run in mlflow logger')
     parser.add_argument('--run_name', type=str, default=None)
-    parser.add_argument('--n_tasks', type=int, default=10)
+    parser.add_argument('--n_tasks', type=int, default=None)
 
 
 def add_rehearsal_args(parser: ArgumentParser) -> None:

@@ -55,9 +55,23 @@ class ContinualBenchmark:
         raise NotImplementedError
 
     @property
-    def transform(self) -> nn.Module:
+    def train_transform(self) -> nn.Module:
         """
         Returns the transform to be used for to the current dataset.
+        """
+        raise NotImplementedError
+
+    @property
+    def not_aug_transform(self) -> nn.Module:
+        """
+        Returns the transform to be used for images that will be stored in the buffer
+        """
+        raise NotImplementedError
+
+    @property
+    def test_transform(self) -> nn.Module:
+        """
+        Returns the transform to be used for test set images
         """
         raise NotImplementedError
 

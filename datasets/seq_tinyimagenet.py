@@ -132,7 +132,7 @@ class SequentialTinyImagenet(ContinualBenchmark):
             test_transform.transforms.insert(0, transforms.Resize(self.image_size))
 
         train_dataset = TrainTinyImagenet(base_path() + 'TINYIMG',
-                                          train=True, download=True, transform=self.transform, not_aug_transform=not_aug_transform)
+                                          train=True, download=True, transform=self.train_transform, not_aug_transform=not_aug_transform)
         if self.args.validation:
             train_dataset, test_dataset = get_train_val(train_dataset,
                                                         test_transform, self.NAME)
@@ -152,7 +152,7 @@ class SequentialTinyImagenet(ContinualBenchmark):
         return F.cross_entropy
 
     @property
-    def transform(self):
+    def train_transform(self):
         transform_list = [transforms.RandomHorizontalFlip(),
                           transforms.ToTensor(),
                           self.get_normalization_transform()]
@@ -164,7 +164,7 @@ class SequentialTinyImagenet(ContinualBenchmark):
         return transform
 
     def get_transform(self):
-        transform = transforms.Compose([transforms.ToPILImage(), self.transform])
+        transform = transforms.Compose([transforms.ToPILImage(), self.train_transform])
         return transform
 
     @staticmethod

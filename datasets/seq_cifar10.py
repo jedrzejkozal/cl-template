@@ -81,7 +81,7 @@ class SequentialCIFAR10(ContinualBenchmark):
             test_transform.transforms.insert(0, transforms.Resize(self.image_size))
 
         train_dataset = TrainCIFAR10(base_path() + 'CIFAR10', train=True,
-                                     download=True, transform=self.transform, not_aug_transform=not_aug_transform)
+                                     download=True, transform=self.train_transform, not_aug_transform=not_aug_transform)
         if self.args.validation:
             train_dataset, test_dataset = get_train_val(train_dataset,
                                                         test_transform, self.NAME)
@@ -94,7 +94,7 @@ class SequentialCIFAR10(ContinualBenchmark):
         return train, test
 
     @property
-    def transform(self):
+    def train_transform(self):
         transform_list = [transforms.RandomHorizontalFlip(),
                           transforms.ToTensor(),
                           self.get_normalization_transform()]
@@ -106,7 +106,7 @@ class SequentialCIFAR10(ContinualBenchmark):
         return transform
 
     def get_transform(self):
-        transform = transforms.Compose([transforms.ToPILImage(), self.transform])
+        transform = transforms.Compose([transforms.ToPILImage(), self.train_transform])
         return transform
 
     def get_backbone(self):

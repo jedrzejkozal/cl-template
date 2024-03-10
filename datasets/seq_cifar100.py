@@ -16,7 +16,6 @@ from datasets.transforms.denormalization import DeNormalize
 from datasets.utils.continual_benchmark import ContinualBenchmark
 from datasets.utils.validation import get_train_val
 from utils.conf import base_path_dataset as base_path
-from torchvision.models import mobilenet_v2
 from datasets.utils.additional_augmentations import CIFAR10Policy
 from datasets.utils.ops import Cutout
 
@@ -85,7 +84,7 @@ class SequentialCIFAR100(ContinualBenchmark):
             test_transform.transforms.insert(0, transforms.Resize(self.image_size))
 
         train_dataset = TrainCIFAR100(base_path() + 'CIFAR100', train=True,
-                                      download=True, transform=self.transform, not_aug_transform=not_aug_transform)
+                                      download=True, transform=self.train_transform, not_aug_transform=not_aug_transform)
         if self.args.validation:
             train_dataset, test_dataset = get_train_val(train_dataset,
                                                         test_transform, self.NAME)
@@ -99,7 +98,7 @@ class SequentialCIFAR100(ContinualBenchmark):
         return train, test
 
     @property
-    def transform(self):
+    def train_transform(self):
         if self.args.additional_augmentations:
             transform_list = [
                 transforms.RandomHorizontalFlip(),
@@ -123,7 +122,7 @@ class SequentialCIFAR100(ContinualBenchmark):
         return transform
 
     def get_transform(self):
-        transform = transforms.Compose([transforms.ToPILImage(), self.transform])
+        transform = transforms.Compose([transforms.ToPILImage(), self.train_transform])
         return transform
 
     def get_backbone(self):

@@ -63,13 +63,13 @@ class SequentialMNIST(ContinualBenchmark):
 
     def get_data_loaders(self):
         train_dataset = TrainMNIST(base_path() + 'MNIST',
-                                   train=True, download=True, transform=self.transform, not_aug_transform=self.transform)
+                                   train=True, download=True, transform=self.train_transform, not_aug_transform=self.train_transform)
         if self.args.validation:
             train_dataset, test_dataset = get_train_val(train_dataset,
-                                                        self.transform, self.NAME)
+                                                        self.train_transform, self.NAME)
         else:
             test_dataset = MNIST(base_path() + 'MNIST',
-                                 train=False, download=True, transform=self.transform)
+                                 train=False, download=True, transform=self.train_transform)
 
         train, test = self.store_masked_loaders(train_dataset, test_dataset)
         return train, test
@@ -80,7 +80,7 @@ class SequentialMNIST(ContinualBenchmark):
                         * SequentialMNIST.N_CLASSES_PER_TASK)
 
     @property
-    def transform(self):
+    def train_transform(self):
         transform_list = [transforms.ToTensor()]
         if self.image_size != self.IMG_SIZE:
             transform_list = [transforms.Resize(self.image_size)] + transform_list
@@ -88,7 +88,7 @@ class SequentialMNIST(ContinualBenchmark):
         return transform
 
     def get_transform(self):
-        transform = transforms.Compose([transforms.ToPILImage(), self.transform])
+        transform = transforms.Compose([transforms.ToPILImage(), self.train_transform])
         return transform
 
     @staticmethod
