@@ -1,16 +1,14 @@
 import copy
 import torch
 import torch.nn as nn
+import torchvision.transforms
+import torch.utils.data
 from torch.distributions import MultivariateNormal
-
-from itertools import compress
-from PIL import Image
 
 from models.utils.continual_model import ContinualModel
 from models.utils.gmm import GaussianMixture
 from backbones.resnet import resnet18, resnet50
 from backbones.resnet32 import resnet32
-from torchvision.datasets import ImageFolder
 
 from utils.args import add_management_args, add_experiment_args, ArgumentParser
 
@@ -35,38 +33,6 @@ def get_parser() -> ArgumentParser:
     parser.add_argument('--clipping', default=1, type=float, required=False, help='Clip gradient norm (default=%(default)s)')
 
     return parser
-
-
-class ClassMemoryDataset(torch.utils.data.Dataset):
-    """ Dataset consisting of samples of only one class """
-
-    def __init__(self, images, transforms):
-        self.images = images
-        self.transforms = transforms
-
-    def __len__(self):
-        return self.images.shape[0]
-
-    def __getitem__(self, index):
-        image = Image.fromarray(self.images[index])
-        image = self.transforms(image)
-        return image
-
-
-class ClassDirectoryDataset(torch.utils.data.Dataset):
-    """ Dataset consisting of samples of only one class loaded from disc """
-
-    def __init__(self, images, transforms):
-        self.images = images
-        self.transforms = transforms
-
-    def __len__(self):
-        return len(self.images)
-
-    def __getitem__(self, index):
-        image = Image.open(self.images[index]).convert('RGB')
-        image = self.transforms(image)
-        return image
 
 
 class ExtractorEnsemble(nn.Module):
@@ -241,23 +207,23 @@ class SEED(ContinualModel):
         self.net.eval()
         classes = self.net.taskcla[t][1]
         self.net.task_offset.append(self.net.task_offset[-1] + classes)
-        transforms = val_loader.dataset.transform
+        transforms = torchvision.transforms.Compose([torchvision.transforms.ToPILImage(), val_loader.dataset.transform])
         for bb_num in range(min(self.max_experts, t+1)):
             eps = 1e-8
             model = self.net.bbs[bb_num]
             for c in range(classes):
                 c = c + self.net.task_offset[t]
-                train_indices = torch.tensor(trn_loader.dataset.targets) == c
-                if issubclass(type(trn_loader.dataset), ImageFolder):  # isinstance(trn_loader.dataset.images, list):
-                    train_images = list(compress(trn_loader.dataset.images, train_indices))
-                    ds = ClassDirectoryDataset(train_images, transforms)
-                else:
-                    ds = trn_loader.dataset.data[train_indices]
-                    ds = ClassMemoryDataset(ds, transforms)
-                loader = torch.utils.data.DataLoader(ds, batch_size=128, num_workers=trn_loader.num_workers, shuffle=False)
+                ds = copy.deepcopy(trn_loader.dataset)
+                class_idx = [i for i, (_, label, _) in enumerate(ds) if label == c]
+                ds = torch.utils.data.Subset(ds, class_idx)
+                if len(ds) == 0:
+                    raise ValueError(f"Dataset len for class {c} is equal to 0")
+
+                loader = torch.utils.data.DataLoader(ds, batch_size=self.args.batch_size, num_workers=trn_loader.num_workers, shuffle=False)
                 from_ = 0
                 class_features = torch.full((2 * len(ds), self.net.num_features), fill_value=-999999999.0, device=self.net.device)
-                for images in loader:
+                for _, _, not_aug_images in loader:
+                    images = torch.stack([transforms(img) for img in not_aug_images])
                     bsz = images.shape[0]
                     images = images.to(self.device)
                     features = model(images)
