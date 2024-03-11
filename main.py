@@ -109,14 +109,6 @@ def run_experiment(args):
     args.conf_timestamp = str(datetime.datetime.now())
     args.conf_host = socket.gethostname()
     dataset = get_dataset(args)
-    if args.n_tasks != None:
-        type(dataset).N_TASKS = args.n_tasks
-        type(dataset).N_CLASSES_PER_TASK = type(dataset).N_CLASSES // type(dataset).N_TASKS
-    else:
-        args.n_tasks = type(dataset).N_TASKS
-    if args.img_size is None:
-        args.img_size = dataset.IMG_SIZE
-        dataset.image_size = dataset.IMG_SIZE
 
     if args.n_epochs is None and isinstance(dataset, ContinualBenchmark):
         args.n_epochs = dataset.get_epochs()

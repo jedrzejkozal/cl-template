@@ -32,7 +32,7 @@ def mask_classes(outputs: torch.Tensor, dataset: ContinualBenchmark, k: int) -> 
             dataset.N_TASKS * dataset.N_CLASSES_PER_TASK] = -float('inf')
 
 
-def evaluate(model: ContinualModel, dataset: ContinualBenchmark, last=False) -> Tuple[list, list]:
+def evaluate(model: ContinualModel, dataset: ContinualBenchmark, last=False, debug=False) -> Tuple[list, list]:
     """
     Evaluates the accuracy of the model for each past task.
     :param model: the model to be evaluated
@@ -46,11 +46,11 @@ def evaluate(model: ContinualModel, dataset: ContinualBenchmark, last=False) -> 
     for k, test_loader in enumerate(dataset.test_loaders):
         if last and k < len(dataset.test_loaders) - 1:
             continue
-        acc_class_incr, acc_task_incr = compute_acc(model, dataset, k, test_loader)
+        acc_class_incr, acc_task_incr = compute_acc(model, dataset, k, test_loader, debug=debug)
         test_accs.append(acc_class_incr)
         test_accs_mask_classes.append(acc_task_incr)
 
-    train_acc, train_acc_mask_classes = compute_acc(model, dataset, k, dataset.train_loader)
+    train_acc, train_acc_mask_classes = compute_acc(model, dataset, k, dataset.train_loader, debug=debug)
 
     model.net.train(status)
     print('\nevaluation task train acc:')
@@ -64,10 +64,12 @@ def evaluate(model: ContinualModel, dataset: ContinualBenchmark, last=False) -> 
     return train_acc, train_acc_mask_classes, test_accs, test_accs_mask_classes
 
 
-def compute_acc(model, dataset, k, dataloader):
+def compute_acc(model, dataset, k, dataloader, debug=False):
     correct, correct_mask_classes, total = 0.0, 0.0, 0.0
-    for data in dataloader:
+    for i, data in enumerate(dataloader):
         with torch.no_grad():
+            if debug and i > 3:
+                break
             inputs = data[0]
             labels = data[1]
             inputs, labels = inputs.to(model.device), labels.to(model.device)

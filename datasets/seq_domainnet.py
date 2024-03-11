@@ -10,6 +10,7 @@ import torch.nn.functional as F
 import torchvision.transforms as transforms
 
 from typing import Tuple
+from argparse import Namespace
 
 from PIL import Image
 from utils.conf import base_path_dataset as base_path
@@ -92,22 +93,27 @@ def verify_dataset(dataset_path: pathlib.Path):
     return is_ok
 
 
-class DomainNet:
-    def __init__(self, root: str, train=True, transform=None, target_transform=None) -> None:
+class DomainNetDataset:
+    def __init__(self, root: str, split_domains: bool, train=True, transform=None, target_transform=None) -> None:
         if not verify_dataset(root):
             download_dataset(root)
         self.root = pathlib.Path(root)
+        self.split_domains = split_domains
         self.transform = transform
         self.target_transform = target_transform
 
         split = 'train' if train else 'test'
         self.annotations = list()
 
-        for domain_idx, domain in enumerate(['clipart', 'infograph', 'painting', 'quickdraw', 'real', 'sketch']):
-            annotations_filepath = self.root / f'{domain}_{split}.txt'
-            annotations = self.read_annotations(annotations_filepath)
-            annotations = [(filepath, label + domain_idx * 345) for filepath, label in annotations]
-            self.annotations.extend(annotations)
+        if split_domains:
+            for domain_idx, domain in enumerate(['clipart', 'infograph', 'painting', 'quickdraw', 'real', 'sketch']):
+                annotations_filepath = self.root / f'{domain}_{split}.txt'
+                annotations = self.read_annotations(annotations_filepath)
+                annotations = [(filepath, label + domain_idx * 345) for filepath, label in annotations]
+                self.annotations.extend(annotations)
+        else:
+            annotations_filepath = self.root / f'{split}.txt'
+            self.annotations = self.read_annotations(annotations_filepath)
 
     def read_annotations(self, annotation_filepath: pathlib.Path):
         annotations = list()
@@ -134,14 +140,14 @@ class DomainNet:
         return img, target
 
 
-class TestDomainNet(DomainNet):
-    def __init__(self, root, transform=None, target_transform=None) -> None:
-        super().__init__(root, train=False, transform=transform, target_transform=target_transform)
+class TestDomainNet(DomainNetDataset):
+    def __init__(self, root, split_domains, transform=None, target_transform=None) -> None:
+        super().__init__(root, split_domains, train=False, transform=transform, target_transform=target_transform)
 
 
-class TrainDomainNet(DomainNet):
-    def __init__(self, root, transform=None, not_aug_transform=None, target_transform=None) -> None:
-        super().__init__(root, train=True, transform=transform, target_transform=target_transform)
+class TrainDomainNet(DomainNetDataset):
+    def __init__(self, root, split_domains, transform=None, not_aug_transform=None, target_transform=None) -> None:
+        super().__init__(root, split_domains, train=True, transform=transform, target_transform=target_transform)
         self.not_aug_transform = not_aug_transform
 
     def __getitem__(self, index: int) -> Tuple[Image.Image, int, Image.Image]:
@@ -168,24 +174,31 @@ class SequentialDomainNet(ContinualBenchmark):
 
     NAME = 'seq-domainnet'
     SETTING = 'class-il'
-    N_CLASSES = 345 * 6
+    N_CLASSES = 300
     N_TASKS = 12
     N_CLASSES_PER_TASK = N_CLASSES // N_TASKS
     IMG_SIZE = 224
 
+    def __init__(self, args: Namespace) -> None:
+        if args.split_domains:
+            SequentialDomainNet.N_CLASSES = 345 * 6
+            SequentialDomainNet.N_CLASSES_PER_TASK = SequentialDomainNet.N_CLASSES // SequentialDomainNet.N_TASKS
+        super().__init__(args)
+
     def get_data_loaders(self):
-        train_dataset = TrainDomainNet(base_path() + 'DOMAINNET', transform=self.train_transform, not_aug_transform=self.not_aug_transform)
+        train_dataset = TrainDomainNet(base_path() + 'DOMAINNET', self.args.split_domains,
+                                       transform=self.train_transform, not_aug_transform=self.not_aug_transform)
         if self.args.validation:
             train_dataset, test_dataset = get_train_val(train_dataset, self.test_transform, self.NAME)
         else:
-            test_dataset = TestDomainNet(base_path() + 'DOMAINNET', transform=self.test_transform)
+            test_dataset = TestDomainNet(base_path() + 'DOMAINNET', self.args.split_domains, transform=self.test_transform)
 
         self.permute_tasks(train_dataset, test_dataset)
         train, test = self.store_masked_loaders(train_dataset, test_dataset)
 
         return train, test
 
-    def select_subsets(self, train_dataset: DomainNet, test_dataset: DomainNet, n_classes):
+    def select_subsets(self, train_dataset: DomainNetDataset, test_dataset: DomainNetDataset, n_classes):
         train_dataset.annotations = list(filter(lambda s: s[1] >= self.i and s[1] < self.i + n_classes, train_dataset.annotations))
         test_dataset.annotations = list(filter(lambda s: s[1] >= self.i and s[1] < self.i + n_classes, test_dataset.annotations))
         return train_dataset, test_dataset
@@ -239,8 +252,6 @@ class SequentialDomainNet(ContinualBenchmark):
         return transform
 
     def get_backbone(self):
-        print(self.N_CLASSES)
-        exit()
         return resnet18(self.N_CLASSES, width=self.args.model_width)
 
     @staticmethod
@@ -269,7 +280,7 @@ class SequentialDomainNet(ContinualBenchmark):
 
     @staticmethod
     def get_minibatch_size():
-        return DomainNet.get_batch_size()
+        return DomainNetDataset.get_batch_size()
 
     @staticmethod
     def get_scheduler(model, args) -> torch.optim.lr_scheduler:
@@ -279,11 +290,16 @@ class SequentialDomainNet(ContinualBenchmark):
 
     def permute_tasks(self, train_dataset, test_dataset):
         """permute tasks order, but make sure, that two classes form different domains don't end up in the same task"""
-        train_dataset = self.permute_dataset(train_dataset)
-        test_dataset = self.permute_dataset(test_dataset)
+        if self.args.split_domains:
+            train_dataset = self.permute_domains(train_dataset)
+            test_dataset = self.permute_domains(test_dataset)
+        else:
+            new_classes = np.random.RandomState(seed=self.args.seed).permutation(list(range(300)))
+            train_dataset.annotations = [(filepath, new_classes[label]) for filepath, label in train_dataset.annotations]
+            test_dataset.annotations = [(filepath, new_classes[label]) for filepath, label in test_dataset.annotations]
         return train_dataset, test_dataset
 
-    def permute_dataset(self, dataset: DomainNet):
+    def permute_domains(self, dataset: DomainNetDataset):
         domain_idxs = list(range(6))
         new_domain_idxs = np.random.RandomState(seed=self.args.seed).permutation(domain_idxs)
         new_classes = np.random.RandomState(seed=self.args.seed).permutation(list(range(345)))

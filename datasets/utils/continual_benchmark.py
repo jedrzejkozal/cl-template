@@ -21,6 +21,7 @@ class ContinualBenchmark:
     N_CLASSES: int
     N_CLASSES_PER_TASK: int
     N_TASKS: int
+    IMG_SIZE: int
 
     def __init__(self, args: Namespace) -> None:
         """
@@ -39,6 +40,15 @@ class ContinualBenchmark:
             raise NotImplementedError('The dataset must be initialized with all the required fields.')
         if self.args.half_data_in_first_task:
             self.N_TASKS = self.N_TASKS // 2 + 1
+
+        if args.n_tasks != None:
+            type(self).N_TASKS = args.n_tasks
+            type(self).N_CLASSES_PER_TASK = type(self).N_CLASSES // type(self).N_TASKS
+        else:
+            args.n_tasks = type(self).N_TASKS
+        if args.img_size is None:
+            args.img_size = self.IMG_SIZE
+            self.image_size = self.IMG_SIZE
 
     def get_data_loaders(self) -> Tuple[DataLoader, DataLoader]:
         """
@@ -148,9 +158,9 @@ class ContinualBenchmark:
         self.select_subsets(train_dataset, test_dataset, n_classes)
 
         train_loader = DataLoader(train_dataset,
-                                  batch_size=self.args.batch_size, shuffle=True, num_workers=4)
+                                  batch_size=self.args.batch_size, shuffle=True, num_workers=self.args.num_workers)
         test_loader = DataLoader(test_dataset,
-                                 batch_size=self.args.batch_size, shuffle=False, num_workers=4)
+                                 batch_size=self.args.batch_size, shuffle=False, num_workers=self.args.num_workers)
         self.test_loaders.append(test_loader)
         self.train_loader = train_loader
 

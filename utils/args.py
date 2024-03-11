@@ -14,15 +14,16 @@ def add_experiment_args(parser: ArgumentParser) -> None:
     Adds the arguments used by all the models.
     :param parser: the parser instance
     """
-    parser.add_argument('--dataset', type=str, required=True,
-                        choices=DATASET_NAMES,
+    parser.add_argument('--dataset', type=str, required=True, choices=DATASET_NAMES,
                         help='Which dataset to perform experiments on.')
+    parser.add_argument('--num_workers', default=4, type=int, help='number of processes to use for data loading')
     parser.add_argument('--half_data_in_first_task', action='store_true', help='use half of data for first expirience')
     parser.add_argument('--img_size', type=int, default=None)
     parser.add_argument('--additional_augmentations', action='store_true', help='use additioanl augmentations for dataset')
+    parser.add_argument('--split_domains', action='store_true', help='weather to split data according to domains in DomainNet dataset')
+
     parser.add_argument('--model', type=str, required=True,
                         help='Model name.', choices=get_all_models())
-
     parser.add_argument('--backbone', default=None, type=str, help='backbone to use during training', choices=get_all_backbones())
     parser.add_argument('--model_width', type=float, default=1.0)
     parser.add_argument('--pretrained', action='store_true', help='use pretrained model')

@@ -1,3 +1,4 @@
+import collections
 import copy
 import torch
 import torch.nn as nn
@@ -88,12 +89,15 @@ class SEED(ContinualModel):
         network_type = 'resnet32'
         if args.backbone is not None:
             network_type = args.backbone
+        # TODO fix this
         if self.args.n_tasks == 10:
             taskcla = [(0, 10), (1, 10), (2, 10), (3, 10), (4, 10), (5, 10), (6, 10), (7, 10), (8, 10), (9, 10)]
         elif self.args.n_tasks == 20:
             taskcla = [(i, 5) for i in range(20)]
         elif self.args.n_tasks == 50:
             taskcla = [(i, 2) for i in range(50)]
+        elif self.args.n_tasks == 12:
+            taskcla = [(i, 25) for i in range(self.args.n_tasks)]
         else:
             raise ValueError("n tasks not supported")
 
@@ -208,14 +212,18 @@ class SEED(ContinualModel):
         classes = self.net.taskcla[t][1]
         self.net.task_offset.append(self.net.task_offset[-1] + classes)
         transforms = torchvision.transforms.Compose([torchvision.transforms.ToPILImage(), val_loader.dataset.transform])
+
+        class_indexes = collections.defaultdict(list)
+        for i, (_, label, _) in enumerate(trn_loader.dataset):
+            class_indexes[label].append(i)
+
         for bb_num in range(min(self.max_experts, t+1)):
             eps = 1e-8
             model = self.net.bbs[bb_num]
             for c in range(classes):
                 c = c + self.net.task_offset[t]
                 ds = copy.deepcopy(trn_loader.dataset)
-                class_idx = [i for i, (_, label, _) in enumerate(ds) if label == c]
-                ds = torch.utils.data.Subset(ds, class_idx)
+                ds = torch.utils.data.Subset(ds, class_indexes[c])
                 if len(ds) == 0:
                     raise ValueError(f"Dataset len for class {c} is equal to 0")
 
@@ -231,6 +239,8 @@ class SEED(ContinualModel):
                     features = model(torch.flip(images, dims=(3,)))
                     class_features[from_+bsz: from_+2*bsz] = features
                     from_ += 2*bsz
+                    if self.args.debug:
+                        break
 
                 # Calculate distributions
                 cov_type = "full" if self.use_multivariate else "diag"
