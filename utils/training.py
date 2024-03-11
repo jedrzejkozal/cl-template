@@ -117,7 +117,7 @@ def train(model: ContinualModel, dataset: ContinualBenchmark,
             model.net.train()
             _, _ = dataset_copy.get_data_loaders()
         if model.NAME != 'icarl' and model.NAME != 'pnn':
-            _, _, random_results_class, random_results_task = evaluate(model, dataset_copy)
+            _, _, random_results_class, random_results_task = evaluate(model, dataset_copy, debug=args.debug)
 
     if os.path.exists('old_model.pt'):
         os.remove('old_model.pt')
@@ -131,7 +131,7 @@ def train(model: ContinualModel, dataset: ContinualBenchmark,
         if hasattr(model, 'begin_task'):
             model.begin_task(dataset)
         if t and not args.ignore_other_metrics and not args.debug:
-            accs = evaluate(model, dataset, last=True)
+            accs = evaluate(model, dataset, last=True, debug=args.debug)
             results[t-1] = results[t-1] + accs[2]
             if dataset.SETTING == 'class-il':
                 results_mask_classes[t-1] = results_mask_classes[t-1] + accs[3]
@@ -174,7 +174,7 @@ def train(model: ContinualModel, dataset: ContinualBenchmark,
         #     logger.log_artifact('old_model.pt', f'old_model_task_{t}')
         #     logger.log_artifact('net.pt', f'net_model_task_{t}')
 
-        accs = evaluate(model, dataset)
+        accs = evaluate(model, dataset, debug=args.debug)
         results.append(accs[2])
         results_mask_classes.append(accs[3])
 
