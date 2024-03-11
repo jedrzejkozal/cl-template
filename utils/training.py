@@ -170,10 +170,6 @@ def train(model: ContinualModel, dataset: ContinualBenchmark,
         if hasattr(model, 'end_task'):
             model.end_task(dataset)
 
-        # if 'clewi' in model.NAME and os.path.exists('old_model.pt') and os.path.exists('net.pt'):
-        #     logger.log_artifact('old_model.pt', f'old_model_task_{t}')
-        #     logger.log_artifact('net.pt', f'net_model_task_{t}')
-
         accs = evaluate(model, dataset, debug=args.debug)
         results.append(accs[2])
         results_mask_classes.append(accs[3])
