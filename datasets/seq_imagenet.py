@@ -6,6 +6,7 @@
 from typing import Tuple
 
 import os
+import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim
 import torchvision.transforms as transforms
@@ -67,20 +68,12 @@ class SequentialImageNet(ContinualBenchmark):
     IMG_SIZE = 224
 
     def get_data_loaders(self):
-        not_aug_transform = transforms.Compose([transforms.ToTensor()])
-        test_transform = transforms.Compose([transforms.ToTensor(), self.get_normalization_transform()])
-        if self.image_size != self.IMG_SIZE:
-            not_aug_transform.transforms.insert(0, transforms.Resize(self.image_size))
-            test_transform.transforms.insert(0, transforms.Resize(self.image_size))
-
         train_dataset = TrainImageNet(
-            imagenet_path(), split='train', transform=self.train_transform, not_aug_transform=not_aug_transform)
+            imagenet_path(), split='train', transform=self.train_transform, not_aug_transform=self.not_aug_transform)
         if self.args.validation:
-            train_dataset, test_dataset = get_train_val(train_dataset,
-                                                        test_transform, self.NAME)
+            train_dataset, test_dataset = get_train_val(train_dataset, self.test_transform, self.NAME)
         else:
-            test_dataset = TestImageNet(
-                imagenet_path(), split='val', transform=test_transform)
+            test_dataset = TestImageNet(imagenet_path(), split='val', transform=self.test_transform)
 
         self.permute_tasks(train_dataset, test_dataset)
         train, test = self.store_masked_loaders(train_dataset, test_dataset)
@@ -96,6 +89,22 @@ class SequentialImageNet(ContinualBenchmark):
             transform_list = [transforms.Resize(self.image_size), transforms.RandomCrop(self.image_size, padding=4)] + transform_list
         else:
             transform_list = [transforms.RandomCrop(224, padding=4)] + transform_list
+        transform = transforms.Compose(transform_list)
+        return transform
+
+    @property
+    def not_aug_transform(self) -> nn.Module:
+        transform_list = [transforms.ToTensor()]
+        if self.image_size != self.IMG_SIZE:
+            transform_list = [transforms.Resize(self.image_size)] + transform_list
+        transform = transforms.Compose(transform_list)
+        return transform
+
+    @property
+    def test_transform(self):
+        transform_list = [transforms.ToTensor(), self.get_normalization_transform()]
+        if self.image_size != self.IMG_SIZE:
+            transform_list = [transforms.Resize(self.image_size)] + transform_list
         transform = transforms.Compose(transform_list)
         return transform
 
