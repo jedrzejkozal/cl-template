@@ -69,7 +69,9 @@ def parse_model_args(parser, args):
                             choices=DATASET_NAMES,
                             help='Which dataset to perform experiments on.')
         parser.add_argument('--half_data_in_first_task', action='store_true', help='use half of data for first expirience')
+        parser.add_argument('--additional_augmentations', action='store_true', help='use additioanl augmentations for dataset')
         parser.add_argument('--device', type=str, default='cuda:0')
+        parser.add_argument('--backbone', default=None, type=str, help='backbone to use during training')
         if hasattr(mod, 'Buffer'):
             parser.add_argument('--buffer_size', type=int, required=True,
                                 help='The size of the memory buffer.')
@@ -84,7 +86,7 @@ def parse_model_args(parser, args):
             best = best[-1]
         get_parser = getattr(mod, 'get_parser')
         parser = get_parser()
-        to_parse = sys.argv[1:] + ['--' + k + '=' + str(v) for k, v in best.items()]
+        to_parse = sys.argv[1:] + ['--' + k + '=' + str(v) if not v == 'store_true' else '--' + k for k, v in best.items()]
         to_parse.remove('--load_best_args')
         args = parser.parse_args(to_parse)
         if args.model == 'joint' and args.dataset == 'mnist-360':

@@ -866,6 +866,14 @@ best_args = {
         'lwf': {
             -1: {'lr': 0.03, 'optim_mom': 0, 'optim_wd': 5e-4},
         },
+        'fetril': {
+            -1: {'lr': 0.1, 'n_epochs': 160, 'batch_size': 128, 'svc_regularization': 1.0, 'svc_tolerance': 0.0001,
+                 'optim_mom': 0.9, 'optim_wd': 0.0001, 'additional_augmentations': 'store_true', 'use_lookahead': 'store_true'}
+        },
+        'seed': {
+            -1: {'lr': 0.05, 'n_epochs': 200, 'backbone': 'resnet32', 'gmms': 1, 'use_multivariate': 'store_true', 'tau': 3,
+                 'batch_size': 128, 'optim_wd': 0.9, 'additional_augmentations': 'store_true'}
+        },
 
 
         'er_ace': {
