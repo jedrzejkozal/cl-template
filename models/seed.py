@@ -1,3 +1,5 @@
+# based on original implementation https://github.com/grypesc/SEED
+
 import collections
 import copy
 import torch
