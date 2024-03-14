@@ -68,7 +68,7 @@ def parse_model_args(parser, args):
         parser.add_argument('--dataset', type=str, required=True,
                             choices=DATASET_NAMES,
                             help='Which dataset to perform experiments on.')
-        parser.add_argument('--half_data_in_first_task', action='store_true', help='use half of data for first expirience')
+        parser.add_argument('--half_classes_in_first_task', action='store_true', help='use half of data for first expirience')
         parser.add_argument('--additional_augmentations', action='store_true', help='use additioanl augmentations for dataset')
         parser.add_argument('--device', type=str, default='cuda:0')
         parser.add_argument('--backbone', default=None, type=str, help='backbone to use during training')

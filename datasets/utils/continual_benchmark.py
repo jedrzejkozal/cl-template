@@ -34,12 +34,10 @@ class ContinualBenchmark:
         self.args = args
         self.image_size = args.img_size
 
-        if not self.args.half_data_in_first_task and self.N_CLASSES // self.N_TASKS < 2:
-            raise ValueError(f"Each task should have at least 2 classes, got N_CLASSES={self.N_CLASSES}, N_TASKS={self.N_TASKS}")
         if not all((self.NAME, self.SETTING, self.N_CLASSES, self.N_CLASSES_PER_TASK, self.N_TASKS)):
             raise NotImplementedError('The dataset must be initialized with all the required fields.')
-        if self.args.half_data_in_first_task:
-            self.N_TASKS = self.N_TASKS // 2 + 1
+        if not self.args.half_classes_in_first_task and self.N_CLASSES // self.N_TASKS < 2:
+            raise ValueError(f"Each task should have at least 2 classes, got N_CLASSES={self.N_CLASSES}, N_TASKS={self.N_TASKS}")
 
         if args.n_tasks != None:
             type(self).N_TASKS = args.n_tasks
@@ -49,6 +47,10 @@ class ContinualBenchmark:
         if args.img_size is None:
             args.img_size = self.IMG_SIZE
             self.image_size = self.IMG_SIZE
+
+        if self.args.half_classes_in_first_task:
+            type(self).N_CLASSES_PER_TASK = self.N_CLASSES // 2 // (args.n_tasks-1)
+            assert self.N_CLASSES_PER_TASK >= 2
 
     def get_data_loaders(self) -> Tuple[DataLoader, DataLoader]:
         """
@@ -150,7 +152,7 @@ class ContinualBenchmark:
         :param setting: continual learning setting
         :return: train and test loaders
         """
-        if self.args.half_data_in_first_task and self.i == 0:
+        if self.args.half_classes_in_first_task and self.i == 0:
             n_classes = self.N_CLASSES // 2
         else:
             n_classes = self.N_CLASSES_PER_TASK

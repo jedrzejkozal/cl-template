@@ -119,11 +119,6 @@ def train(model: ContinualModel, dataset: ContinualBenchmark,
         if model.NAME != 'icarl' and model.NAME != 'pnn':
             _, _, random_results_class, random_results_task = evaluate(model, dataset_copy, debug=args.debug)
 
-    if os.path.exists('old_model.pt'):
-        os.remove('old_model.pt')
-    if os.path.exists('net.pt'):
-        os.remove('net.pt')
-
     print(file=sys.stderr)
     for t in range(dataset.N_TASKS):
         model.net.train()
