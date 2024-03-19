@@ -867,7 +867,7 @@ best_args = {
             -1: {'lr': 0.03, 'optim_mom': 0, 'optim_wd': 5e-4},
         },
         'ssre': {
-            -1: {'lr': 0.001, 'n_epochs': 101, 'batch_size': 128, 'backbone': 'resnet18_rep', 'lambda_fkd': 1, 'lambda_proto': 10, 'temp': 0.1,
+            -1: {'lr': 0.001, 'n_epochs': 100, 'batch_size': 128, 'backbone': 'resnet18_rep', 'lambda_fkd': 1.0, 'lambda_proto': 10.0, 'temp': 0.1,
                  'optim_wd': 5e-4, 'additional_augmentations': 'store_true'}
         },
         'fetril': {

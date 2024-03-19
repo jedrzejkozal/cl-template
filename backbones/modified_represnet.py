@@ -1,5 +1,5 @@
+import math
 import torch.nn as nn
-import torch.utils.model_zoo as model_zoo
 import torch.nn.functional as F
 
 
@@ -25,7 +25,10 @@ class conv_block(nn.Module):
 
     def re_init_conv(self):
         nn.init.kaiming_normal_(self.adapter.weight, mode='fan_out', nonlinearity='relu')
-        return
+        fan_in, _ = nn.init._calculate_fan_in_and_fan_out(self.adapter.weight)
+        if fan_in != 0:
+            bound = 1 / math.sqrt(fan_in)
+            nn.init.uniform_(self.adapter.bias, -bound, bound)
 
     def forward(self, x):
         y = self.conv(x)
@@ -65,7 +68,7 @@ class BasicBlock(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, block, layers, num_classes=100, mode='parallel_adapters', cifar_fist_layer=True):
+    def __init__(self, block, layers, num_classes=100, mode='normal', cifar_fist_layer=True):
         self.inplanes = 64
         super(ResNet, self).__init__()
         self.mode = mode
@@ -152,10 +155,6 @@ def resnet18_rep(n_classes: int, width: int = 1, pretrained: bool = False):
     """
     model = ResNet(BasicBlock, [2, 2, 2, 2], n_classes, mode='parallel_adapters', cifar_fist_layer=True)
     if pretrained:
-        # pretrained_state_dict = model_zoo.load_url(model_urls['resnet18'])
-        # now_state_dict = model.state_dict()
-        # now_state_dict.update(pretrained_state_dict)
-        # model.load_state_dict(now_state_dict)
         raise NotImplementedError
     return model
 
@@ -167,10 +166,6 @@ def resnet34_rep(n_classes: int, width: int = 1, pretrained: bool = False):
     """
     model = ResNet(BasicBlock, [3, 4, 6, 3], n_classes, mode='parallel_adapters', cifar_fist_layer=True)
     if pretrained:
-        # pretrained_state_dict = model_zoo.load_url(model_urls['resnet34'])
-        # now_state_dict = model.state_dict()
-        # now_state_dict.update(pretrained_state_dict)
-        # model.load_state_dict(now_state_dict)
         raise NotImplementedError
     return model
 
