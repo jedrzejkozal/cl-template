@@ -20,8 +20,9 @@ def get_parser() -> ArgumentParser:
     add_experiment_args(parser)
 
     parser.add_argument('--temp', default=0.1, type=float, help='softmax temperature')
-    parser.add_argument('--lambda_fkd', default=1.0, type=float, help='')
-    parser.add_argument('--lambda_proto', default=10, type=float, help='')
+    parser.add_argument('--lambda_fkd', default=10.0, type=float, help='distilation loss weight parameter')
+    parser.add_argument('--lambda_proto', default=10, type=float, help='prototype loss weight parameter')
+    parser.add_argument('--threshold', default=0.8, type=float, help='threshold for prototype selection')
 
     return parser
 
@@ -78,7 +79,7 @@ class SSRE(ContinualModel):
         with torch.no_grad():
             weights = F.normalize(features, p=2, dim=1, eps=1e-12) @ F.normalize(protos, p=2, dim=1, eps=1e-12).T
             weights = torch.max(weights, dim=1)[0]
-            # mask = weights > self.args["threshold"]
+            # mask = weights > self.args.threshold
             mask = weights
         logits = self.net(inputs)
         loss_clf = F.cross_entropy(logits/self.args.temp, targets, reduction="none")
@@ -143,10 +144,12 @@ class SSRE(ContinualModel):
     def _network_expansion(self):
         if self._cur_task > 0:
             for p in self.net.parameters():
+                p.requires_grad = False
+            for p in self.net.fc.parameters():
                 p.requires_grad = True
             for k, v in self.net.named_parameters():
-                if 'adapter' not in k:
-                    v.requires_grad = False
+                if 'adapter' in k:
+                    v.requires_grad = True
         # self.net.re_init_params() # do not use!
         self.net.switch("parallel_adapters")
 

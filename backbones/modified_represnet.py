@@ -68,7 +68,7 @@ class BasicBlock(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, block, layers, num_classes=100, mode='normal', cifar_fist_layer=True):
+    def __init__(self, block, layers, num_classes=100, mode='parallel_adapters', cifar_fist_layer=True):
         self.inplanes = 64
         super(ResNet, self).__init__()
         self.mode = mode
